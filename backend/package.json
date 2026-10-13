@@ -1,0 +1,51 @@
+{
+  "name": "lograke-backend",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.x"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --forceExit --detectOpenHandles",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch --forceExit"
+  },
+  "keywords": [
+    "log-analysis",
+    "logging",
+    "observability",
+    "log-management"
+  ],
+  "author": "Lograke Team",
+  "description": "Universal Adaptive Log Intelligence Platform — backend API server",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lograke/lograke"
+  },
+  "homepage": "https://lograke.ai",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "adm-zip": "^0.5.17",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.11.1",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.0",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "safe-regex2": "^5.1.2",
+    "ssh2-sftp-client": "^12.1.1",
+    "tar": "^7.5.16",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
