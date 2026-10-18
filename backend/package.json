@@ -56,7 +56,7 @@
     "multer": "^2.1.1",
     "safe-regex2": "^5.1.2",
     "ssh2-sftp-client": "^12.1.1",
-    "tar": "^7.5.16",
+    "tar": "^7.5.22",
     "winston": "^3.19.0"
   },
   "devDependencies": {
