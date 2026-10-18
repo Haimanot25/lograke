@@ -10,8 +10,10 @@ const PROVIDERS = {
     envKey: 'GROQ_API_KEY',
     apiUrl: 'https://api.groq.com/openai/v1/chat/completions',
     models: [
-      'meta-llama/llama-4-maverick-17b-128e-instruct',
-      'meta-llama/llama-4-scout-17b-16e-instruct'
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'openai/gpt-oss-20b',
+      'allam-2-7b'
     ],
     requiresKey: true,
     contextLimit: 131072,
@@ -271,6 +273,21 @@ async function fetchModelIdsGemini(apiKey) {
   return ids;
 }
 
+const NON_CHAT_MODEL_RE = /whisper|tts|speech|audio|embedding|rerank|prompt-guard|safeguard|orpheus|distil|playai/i;
+const DISCOVER_PREFER = {
+  groq: /gpt-oss|qwen|llama-3|llama-4|allam/i,
+  gemini: /flash|gemini/i,
+  grok: /grok/i,
+  ollama: /llama|mistral|gemma/i,
+};
+
+function pickChatModelsFromDiscovered(provider, discoveredSet) {
+  const ids = [...discoveredSet].filter(id => !NON_CHAT_MODEL_RE.test(id));
+  const prefer = DISCOVER_PREFER[provider];
+  const preferred = prefer ? ids.filter(id => prefer.test(id)) : [];
+  return (preferred.length ? preferred : ids).slice(0, 4);
+}
+
 async function resolveModels(provider, configuredModels, discoverIds) {
   const config = PROVIDERS[provider];
   const configured = (config && Array.isArray(config.models)) ? config.models : configuredModels;
@@ -290,7 +307,14 @@ async function resolveModels(provider, configuredModels, discoverIds) {
   }
   if (!discovered) return base;
   const available = base.filter(m => discovered.has(m));
-  return available.length ? available : base;
+  if (available.length) return available;
+  // Configured list is stale — select chat-capable models from live discovery instead
+  const picked = pickChatModelsFromDiscovered(provider, discovered);
+  if (picked.length) {
+    logger.warn(`[AiService] Configured ${provider} models unavailable; using discovered models: ${picked.join(', ')}`);
+    return picked;
+  }
+  return base;
 }
 
 function isDecommissionedModelError(err) {
