@@ -45,7 +45,7 @@
     "@google/generative-ai": "^0.24.1",
     "adm-zip": "^0.5.17",
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
