@@ -1,32 +1,46 @@
 {
-  "name": "lograke-backend",
+  "name": "lograke",
   "version": "1.0.0",
-  "private": true,
+  "description": "Universal adaptive log intelligence platform — ingest, parse, search, and visualize logs with AI-powered insights.",
   "license": "MIT",
   "engines": {
     "node": ">=20.19.0"
   },
   "main": "src/index.js",
+  "bin": {
+    "lograke": "bin/lograke.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "public/",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "start": "node src/index.js",
     "dev": "node src/index.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --forceExit --detectOpenHandles",
     "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch --forceExit",
-    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage --forceExit"
+    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage --forceExit",
+    "prepack": "node scripts/prepare-package.mjs"
   },
   "keywords": [
     "log-analysis",
     "logging",
     "observability",
-    "log-management"
+    "log-management",
+    "monitoring",
+    "ai"
   ],
   "author": "Lograke Team",
-  "description": "Universal Adaptive Log Intelligence Platform — backend API server",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lograke/lograke"
+    "url": "https://github.com/Haimanot25/lograke"
   },
-  "homepage": "https://lograke.ai",
+  "homepage": "https://github.com/Haimanot25/lograke#readme",
+  "bugs": {
+    "url": "https://github.com/Haimanot25/lograke/issues"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "adm-zip": "^0.5.17",

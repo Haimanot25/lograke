@@ -48,11 +48,13 @@ tmp-*.txt
 test_*.json
 tmp_repro_*.js
 backend/tmp-debug-*.js
-implementation_plan*.md
 Building *.md
 
-# AI files
-implementation_plan_ai
+# npm package build artifacts (populated by backend prepack)
+/backend/public/
+/backend/LICENSE
+/backend/CHANGELOG.md
+*.tgz
 
 # E2E test artifacts
 e2e/test-results/

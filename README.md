@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.x-brightgreen)](https://nodejs.org/)
 [![React Version](https://img.shields.io/badge/react-19.x-blue)](https://react.dev/)
-[![CI](https://github.com/lograke/lograke/actions/workflows/ci.yml/badge.svg)](https://github.com/lograke/lograke/actions/workflows/ci.yml)
+[![CI](https://github.com/Haimanot25/lograke/actions/workflows/ci.yml/badge.svg)](https://github.com/Haimanot25/lograke/actions/workflows/ci.yml)
 
 Lograke is an enterprise-grade, open-source log analysis platform that automatically parses, analyzes, and visualizes log files from any system without requiring custom parsers.
 
@@ -46,6 +46,14 @@ Lograke is an enterprise-grade, open-source log analysis platform that automatic
 
 ## Quick Start
 
+### Run from npm
+
+```bash
+npx lograke
+```
+
+Opens the full app (API + web UI) at http://localhost:5000 — the first registered user becomes admin.
+
 ### Prerequisites
 - Node.js >= 20.x
 - npm or yarn
@@ -54,7 +62,7 @@ Lograke is an enterprise-grade, open-source log analysis platform that automatic
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/lograke/lograke
+   git clone https://github.com/Haimanot25/lograke.git
    cd lograke
    ```
 

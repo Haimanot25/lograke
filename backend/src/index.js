@@ -87,7 +87,16 @@ app.use(optionalAuth);
 app.use(requestLogger);
 
 // ── Serve static React build files in production ───────────────
-const frontendBuildPath = path.join(__dirname, '../../frontend/dist');
+// Resolution order:
+//   1. FRONTEND_DIST env var (explicit override, used as-is)
+//   2. repo checkout layout (frontend/dist next to backend/)
+//   3. UI bundled inside the npm package (backend/public, filled by prepack)
+const repoFrontendBuildPath = path.join(__dirname, '../../frontend/dist');
+const bundledFrontendBuildPath = path.join(__dirname, '../public');
+const frontendBuildPath = process.env.FRONTEND_DIST
+  || [repoFrontendBuildPath, bundledFrontendBuildPath]
+    .find(p => fs.existsSync(path.join(p, 'index.html')))
+  || repoFrontendBuildPath;
 if (fs.existsSync(frontendBuildPath)) {
   app.use(express.static(frontendBuildPath));
 }

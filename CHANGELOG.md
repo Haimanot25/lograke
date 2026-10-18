@@ -58,6 +58,7 @@
 - Express 5 backend with SQLite (better-sqlite3) storage
 - React 19 frontend with Vite 8 build tooling
 - Docker Compose fails fast when `JWT_SECRET` is missing
+- Published to npm as [`lograke`](https://www.npmjs.com/package/lograke): `npx lograke` starts the server with the bundled web UI
 - Concurrent frontend/backend development server; cross-platform scripts
 - CI: build, lint, test with coverage gates
 

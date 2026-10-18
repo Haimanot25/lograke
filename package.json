@@ -1,6 +1,7 @@
 {
   "name": "lograke",
   "version": "1.0.0",
+  "private": true,
   "description": "Universal Adaptive Log Intelligence Platform",
   "scripts": {
     "install:all": "cd backend && npm install && cd ../frontend && npm install",
@@ -26,11 +27,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lograke/lograke"
+    "url": "https://github.com/Haimanot25/lograke"
   },
-  "homepage": "https://lograke.ai",
+  "homepage": "https://github.com/Haimanot25/lograke#readme",
   "bugs": {
-    "url": "https://github.com/lograke/lograke/issues"
+    "url": "https://github.com/Haimanot25/lograke/issues"
   },
   "engines": {
     "node": ">=20.19.0"

@@ -10,9 +10,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lograke/lograke"
+    "url": "https://github.com/Haimanot25/lograke"
   },
-  "homepage": "https://lograke.ai",
+  "homepage": "https://github.com/Haimanot25/lograke#readme",
   "scripts": {
     "dev": "vite",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=2048 vite build",
