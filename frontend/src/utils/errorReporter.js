@@ -1,5 +1,4 @@
 const QUEUE_KEY = 'lograke-error-queue';
-const FLUSH_INTERVAL = 30000;
 const MAX_QUEUE = 50;
 
 function getQueue() {
@@ -10,6 +9,9 @@ function setQueue(q) {
   try { sessionStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-MAX_QUEUE))); } catch { /* ignore storage quota errors */ }
 }
 
+// Captures an error into a capped session queue (inspectable in devtools)
+// and logs it in development. There is intentionally no network flush —
+// the backend has no client-error ingestion endpoint.
 export function captureError(error, context = {}) {
   const entry = {
     ts: new Date().toISOString(),
@@ -29,31 +31,6 @@ export function captureError(error, context = {}) {
   const queue = getQueue();
   queue.push(entry);
   setQueue(queue);
-}
-
-export async function flushErrorQueue() {
-  const queue = getQueue();
-  if (!queue.length) return;
-  try {
-    await fetch('/api/logs/client-error', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ errors: queue }),
-    });
-    setQueue([]);
-  } catch { /* best-effort flush; queue will retry later */ }
-}
-
-let flushTimer = null;
-export function startErrorReporting() {
-  if (flushTimer) return;
-  flushTimer = setInterval(flushErrorQueue, FLUSH_INTERVAL);
-  window.addEventListener('beforeunload', flushErrorQueue);
-}
-
-export function stopErrorReporting() {
-  if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
-  window.removeEventListener('beforeunload', flushErrorQueue);
 }
 
 export function installGlobalHandlers() {

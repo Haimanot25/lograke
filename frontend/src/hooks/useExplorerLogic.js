@@ -66,6 +66,9 @@ export function useExplorerLogic({ fileId, context }) {
     return d.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
   }, []);
 
+  // Apply a cross-page trace context once per navigation. handleTrace is
+  // intentionally excluded — re-running when its identity changes would
+  // re-trigger the trace fetch for the same context.
   useEffect(() => {
     if (!context) return;
     if (context.search !== undefined) setSearch(context.search);
@@ -76,6 +79,7 @@ export function useExplorerLogic({ fileId, context }) {
       setTrace(prev => ({ ...prev, value: context.traceValue }));
       handleTrace(undefined, context.traceValue);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only on context change
   }, [context]);
 
   const fetchLogs = useCallback(async () => {
@@ -88,6 +92,7 @@ export function useExplorerLogic({ fileId, context }) {
       if ((searchMode === 'advanced' || searchMode === 'regex') && debouncedSearch.trim()) {
         const query = searchMode === 'regex' ? `regex:"${debouncedSearch}"` : debouncedSearch;
         res = await fetch(`${API_BASE}/logs/${fileId}/query-dsl`, {
+          credentials: 'include',
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query, page, limit, level }),
@@ -95,7 +100,7 @@ export function useExplorerLogic({ fileId, context }) {
         });
       } else {
         const params = new URLSearchParams({ search: debouncedSearch, level, page, limit });
-        res = await fetch(`${API_BASE}/logs/${fileId}/query?${params}`, { signal: controller.signal });
+        res = await fetch(`${API_BASE}/logs/${fileId}/query?${params}`, { credentials: 'include', signal: controller.signal });
       }
       if (res.ok) {
         const data = await res.json();
@@ -110,7 +115,7 @@ export function useExplorerLogic({ fileId, context }) {
 
   const fetchSavedQueries = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/logs/queries/saved`);
+      const res = await fetch(`${API_BASE}/logs/queries/saved`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setSavedQueries(data.queries || []);
@@ -132,10 +137,13 @@ export function useExplorerLogic({ fileId, context }) {
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
   useEffect(() => { fetchSavedQueries(); }, [fetchSavedQueries]);
 
+  // Abort in-flight requests on unmount. The refs hold AbortControllers
+  // (not DOM nodes), so reading .current at cleanup time is intended.
   useEffect(() => {
     return () => {
       if (abortRef.current) abortRef.current.abort();
       if (aiAbortRef.current) aiAbortRef.current.abort();
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- AbortController ref, not a DOM node
       if (explainAbortRef.current) explainAbortRef.current.abort();
     };
   }, []);
@@ -163,7 +171,7 @@ export function useExplorerLogic({ fileId, context }) {
     setExplain({ loading: true, text: '', targetIndex: logIndex });
     let accumulated = '';
     try {
-      const res = await fetch(`${API_BASE}/logs/${fileId}/explain/${logIndex}?stream=true`);
+      const res = await fetch(`${API_BASE}/logs/${fileId}/explain/${logIndex}?stream=true`, { credentials: 'include' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setExplain(prev => ({ ...prev, loading: false, text: data.error || 'Failed to generate analysis.' }));
@@ -221,6 +229,7 @@ export function useExplorerLogic({ fileId, context }) {
     try {
       const logContext = result.logs.slice(0, 50);
       const res = await fetch(`${API_BASE}/logs/${fileId}/query-ai/stream`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: aiPrompt, logContext }),
@@ -273,7 +282,7 @@ export function useExplorerLogic({ fileId, context }) {
     if (!queryValue.trim()) return;
     setTrace(prev => ({ ...prev, loading: true, timeline: [] }));
     try {
-      const res = await fetch(`${API_BASE}/logs/${fileId}/trace?val=${encodeURIComponent(queryValue)}`);
+      const res = await fetch(`${API_BASE}/logs/${fileId}/trace?val=${encodeURIComponent(queryValue)}`, { credentials: 'include' });
       const data = await res.json();
       if (data.timeline?.length === 0) {
         setTrace(prev => ({ ...prev, loading: false }));
@@ -301,6 +310,7 @@ export function useExplorerLogic({ fileId, context }) {
     const prompt = `Analyze this sequence of correlated log events for entity "${trace.value}". Identify any anomalies, errors, and the likely root cause:\n\n${JSON.stringify(sampled, null, 2)}`;
     try {
       const res = await fetch(`${API_BASE}/logs/${fileId}/query-ai`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
@@ -316,6 +326,7 @@ export function useExplorerLogic({ fileId, context }) {
     if (!queryName.trim() || !search.trim()) return;
     try {
       const res = await fetch(`${API_BASE}/logs/queries/saved`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: queryName, query: search })

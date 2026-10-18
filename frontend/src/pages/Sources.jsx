@@ -30,7 +30,7 @@ export default function Sources() {
     setSftpBrowsing(true);
     setSftpFiles([]);
     try {
-      const res = await fetch(`${API_BASE}/log-sources/${source.id}/sftp-list`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/log-sources/${source.id}/sftp-list`, { credentials: 'include', method: 'POST' });
       const data = await res.json();
       if (data.success) setSftpFiles(data.files || []);
       else showAlert(data.error || 'Failed to list files', 'Error', 'error');
@@ -45,6 +45,7 @@ export default function Sources() {
     setSftpImporting(fileName);
     try {
       const res = await fetch(`${API_BASE}/log-sources/${source.id}/sftp-ingest`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileName })
@@ -81,7 +82,7 @@ export default function Sources() {
   const fetchSources = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/log-sources`);
+      const res = await fetch(`${API_BASE}/log-sources`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         setSources(data.sources || []);
@@ -115,6 +116,7 @@ export default function Sources() {
         config.deleteAfterDownload = config.deleteAfterDownload === true;
       }
       const res = await fetch(`${API_BASE}/log-sources`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: formData.name, type: formData.type, config })
@@ -138,7 +140,7 @@ export default function Sources() {
   const handleDelete = async (id) => {
     setActionLoading(id);
     try {
-      const res = await fetch(`${API_BASE}/log-sources/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/log-sources/${id}`, { credentials: 'include', method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         showAlert('Source deleted', 'Deleted');
@@ -156,7 +158,7 @@ export default function Sources() {
     setActionLoading(id);
     try {
       const action = source.running ? 'stop' : 'start';
-      const res = await fetch(`${API_BASE}/log-sources/${id}/${action}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/log-sources/${id}/${action}`, { credentials: 'include', method: 'POST' });
       const data = await res.json();
       if (data.success) {
         showAlert(`Source ${action}ed`, action === 'start' ? 'Started' : 'Stopped');

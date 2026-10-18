@@ -64,7 +64,7 @@ function useForceLayout(nodes, edges, width = 700, height = 480) {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- stores computed force-layout positions; simulation runs only here
     setPositions({ ...pos });
-  }, [nodes, edges]);
+  }, [nodes, edges, width, height]);
 
   return positions;
 }
@@ -86,7 +86,7 @@ function LogGraph() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/logs/visualisation/graph?fileId=${fileId}`);
+        const res = await fetch(`${API_BASE}/logs/visualisation/graph?fileId=${fileId}`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         // Limit to 60 nodes for readability

@@ -21,6 +21,7 @@ describe('fetchJSON', () => {
     const result = await fetchJSON('/api/logs/1');
     expect(result).toEqual(mockData);
     expect(mockFetch).toHaveBeenCalledWith('/api/logs/1', {
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
   });
@@ -46,6 +47,7 @@ describe('fetchJSON', () => {
     });
 
     expect(mockFetch).toHaveBeenCalledWith('/api/test', {
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer token123',
@@ -65,6 +67,7 @@ describe('fetchJSON', () => {
     });
 
     expect(mockFetch).toHaveBeenCalledWith('/api/upload', {
+      credentials: 'include',
       method: 'POST',
       body: JSON.stringify({ name: 'test' }),
       headers: { 'Content-Type': 'application/json' },

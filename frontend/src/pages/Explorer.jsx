@@ -34,6 +34,8 @@ export default function Explorer() {
     handleSaveQuery, applySavedQuery
   } = useExplorerLogic({ fileId, context, aiEnabled });
 
+  // Hydrate search state from the URL once on mount. Deliberately not
+  // re-run on later URL changes (that would fight the state→URL sync below).
   useEffect(() => {
     const s = searchParams.get('search');
     const m = searchParams.get('mode');
@@ -43,8 +45,11 @@ export default function Explorer() {
     if (m !== null && ['text', 'regex', 'advanced'].includes(m)) setSearchMode(m);
     if (l !== null) setLevel(l);
     if (p !== null) setPage(Number(p));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only hydration
   }, []);
 
+  // Sync state → URL. setSearchParams is excluded on purpose: its identity
+  // changes with every navigation, which would re-run this effect in a loop.
   useEffect(() => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
@@ -54,6 +59,7 @@ export default function Explorer() {
       if (page > 1) next.set('page', String(page)); else next.delete('page');
       return next;
     }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid URL-sync loop
   }, [search, searchMode, level, page]);
 
   if (!selectedFile) {

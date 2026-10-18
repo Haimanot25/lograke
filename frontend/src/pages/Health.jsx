@@ -11,8 +11,8 @@ export default function Health() {
     const load = async () => {
       try {
         const [healthRes, metricsRes] = await Promise.all([
-          fetch(`${API_BASE}/health`),
-          fetch(`${API_BASE}/logs/metrics/files`)
+          fetch(`${API_BASE}/health`, { credentials: 'include' }),
+          fetch(`${API_BASE}/logs/metrics/files`, { credentials: 'include' })
         ]);
         if (healthRes.ok) { const healthData = await healthRes.json(); setHealth(healthData); }
         if (metricsRes.ok) {

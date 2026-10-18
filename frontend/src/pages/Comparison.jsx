@@ -26,7 +26,7 @@ export default function Comparison() {
   useEffect(() => {
     const loadFiles = async () => {
       try {
-        const res = await fetch(`${API_BASE}/logs/metrics/files`);
+        const res = await fetch(`${API_BASE}/logs/metrics/files`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setFiles(data.files || []);
@@ -49,8 +49,8 @@ export default function Comparison() {
     setLoading(true);
     try {
       const [res1, res2] = await Promise.all([
-        fetch(`${API_BASE}/logs/${file1Id}`),
-        fetch(`${API_BASE}/logs/${file2Id}`)
+        fetch(`${API_BASE}/logs/${file1Id}`, { credentials: 'include' }),
+        fetch(`${API_BASE}/logs/${file2Id}`, { credentials: 'include' })
       ]);
       if (!res1.ok || !res2.ok) throw new Error('Failed to fetch log data');
 
@@ -87,7 +87,7 @@ export default function Comparison() {
 
       // Fetch drift data
       try {
-        const driftRes = await fetch(`${API_BASE}/logs/compare/${file1Id}/${file2Id}`);
+        const driftRes = await fetch(`${API_BASE}/logs/compare/${file1Id}/${file2Id}`, { credentials: 'include' });
         if (driftRes.ok) {
           const driftJson = await driftRes.json();
           setDriftData(driftJson.drift || null);

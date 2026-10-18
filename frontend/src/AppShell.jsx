@@ -19,7 +19,7 @@ export default function AppShell() {
 
   const checkHealth = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/health`);
+      const res = await fetch(`${API_BASE}/health`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setBackendStatus({ healthy: true, aiEnabled: data.aiEnabled, activeAiProvider: data.activeAiProvider || 'groq' });

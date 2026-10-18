@@ -9,13 +9,7 @@ import EpKpiCard from '../components/EpKpiCard';
 import ActivityHeatmap from '../components/ActivityHeatmap';
 import ExecutiveSummary from '../components/ExecutiveSummary';
 import DonutChart from '../components/DonutChart';
-
-function escapeForRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-function patternToRegex(template) {
-  return escapeForRegex(template).replace(/<[^>]+>/g, '.*');
-}
+import { patternToRegex } from '../utils/pattern';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -39,7 +33,7 @@ export default function Dashboard() {
     if (!fileId) return;
     setDashLoading(true);
     try {
-      const r = await fetch(`${API_BASE}/logs/${fileId}/dashboard`);
+      const r = await fetch(`${API_BASE}/logs/${fileId}/dashboard`, { credentials: 'include' });
       if (r.ok) { const data = await r.json(); setDashboardData(data); setLastUpdated(new Date()); }
     } catch { /* ignore transient dashboard fetch errors */ }
     finally { setDashLoading(false); }

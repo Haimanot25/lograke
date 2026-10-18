@@ -6,7 +6,7 @@ describe('config', () => {
     expect(typeof API_BASE).toBe('string');
   });
 
-  it('should default to localhost:5000/api when no env var set', () => {
+  it('should default to same-origin /api when no env var set', () => {
     // In test environment, VITE_API_BASE is typically not set,
     // so it should fall back to the default
     expect(API_BASE).toContain('/api');

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Brush } from 'recharts';
-import { API_BASE } from '../../config';
+import { useChartData } from '../../hooks/useChartData';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -18,43 +18,40 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function ChronologicalTimeline({ fileId, onNavigate }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [bucketMinutes, setBucketMinutes] = useState(5);
   const [viewMode, setViewMode] = useState('stacked');
 
-  useEffect(() => {
-    if (!fileId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-change; loading flag mirrors request lifecycle
-    setLoading(true);
-    Promise.all([
-      fetch(`${API_BASE}/logs/${fileId}/chronology?bucketMinutes=${bucketMinutes}`).then(r => r.json()),
-      fetch(`${API_BASE}/logs/${fileId}/timeline?bucketMinutes=${bucketMinutes}`).then(r => r.json())
-    ]).then(([chron, timeline]) => {
-      const buckets = timeline.timeline || [];
-      const anomalies = chron.anomalies?.anomalies || [];
-      const anomalyTimes = new Set(anomalies.map(a => a.startTime));
+  const { results, loading } = useChartData(fileId, (id) => [
+    `/logs/${id}/chronology?bucketMinutes=${bucketMinutes}`,
+    `/logs/${id}/timeline?bucketMinutes=${bucketMinutes}`
+  ]);
 
-      const chartData = buckets.map(b => ({
-        time: new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        fullTime: b.startTime,
-        count: b.count,
-        info: b.levels?.info || 0,
-        warn: b.levels?.warn || 0,
-        error: b.levels?.error || 0,
-        isAnomaly: anomalyTimes.has(b.startTime),
-        zScore: anomalies.find(a => a.startTime === b.startTime)?.zScore || 0
-      }));
+  const data = useMemo(() => {
+    if (!results) return null;
+    const [chron, timeline] = results;
+    const buckets = timeline.timeline || [];
+    const anomalies = chron.anomalies?.anomalies || [];
+    const anomalyTimes = new Set(anomalies.map(a => a.startTime));
 
-      setData({
-        chartData,
-        anomalies,
-        stats: timeline.stats,
-        temporalInsights: chron.temporalInsights,
-        healthScore: chron.healthScore
-      });
-    }).catch((e) => { console.warn('ChronologicalTimeline fetch failed', e); }).finally(() => setLoading(false));
-  }, [fileId, bucketMinutes]);
+    const chartData = buckets.map(b => ({
+      time: new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      fullTime: b.startTime,
+      count: b.count,
+      info: b.levels?.info || 0,
+      warn: b.levels?.warn || 0,
+      error: b.levels?.error || 0,
+      isAnomaly: anomalyTimes.has(b.startTime),
+      zScore: anomalies.find(a => a.startTime === b.startTime)?.zScore || 0
+    }));
+
+    return {
+      chartData,
+      anomalies,
+      stats: timeline.stats,
+      temporalInsights: chron.temporalInsights,
+      healthScore: chron.healthScore
+    };
+  }, [results]);
 
   if (loading) return <div className="chart-loading">Loading timeline...</div>;
   if (!data?.chartData?.length) return <div className="chart-empty">No timeline data available.</div>;

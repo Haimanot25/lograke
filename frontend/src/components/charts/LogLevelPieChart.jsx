@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sector } from 'recharts';
-import { API_BASE } from '../../config';
+import { useChartData } from '../../hooks/useChartData';
 
 const COLORS = {
   error: '#ef4444',
@@ -34,27 +34,19 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function LogLevelPieChart({ fileId }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  useEffect(() => {
-    if (!fileId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-change; loading flag mirrors request lifecycle
-    setLoading(true);
-    fetch(`${API_BASE}/logs/${fileId}/metadata`)
-      .then(r => r.json())
-      .then(d => {
-        const lc = d.metadata?.levelCounts || d.levelCounts || {};
-        const pieData = Object.entries(lc)
-          .filter(([, v]) => v > 0)
-          .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value, fill: COLORS[name] || '#6b7280' }))
-          .sort((a, b) => b.value - a.value);
-        setData(pieData);
-      })
-      .catch((e) => { console.warn('LogLevelPieChart fetch failed', e); })
-      .finally(() => setLoading(false));
-  }, [fileId]);
+  const { results, loading } = useChartData(fileId, (id) => [`/logs/${id}/metadata`]);
+
+  const data = useMemo(() => {
+    if (!results) return null;
+    const d = results[0];
+    const lc = d.metadata?.levelCounts || d.levelCounts || {};
+    return Object.entries(lc)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value, fill: COLORS[name] || '#6b7280' }))
+      .sort((a, b) => b.value - a.value);
+  }, [results]);
 
   if (loading) return <div className="chart-loading">Loading distribution...</div>;
   if (!data?.length) return <div className="chart-empty">No level data.</div>;

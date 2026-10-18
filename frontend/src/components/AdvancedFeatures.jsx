@@ -128,7 +128,7 @@ export function ExportButton({ fileId }) {
   }, []);
 
   const exportLog = (format) => {
-    window.open(`${API_BASE}/logs/${fileId}/export?format=${format}`, '_blank');
+    window.open(`${API_BASE}/logs/${fileId}/export?format=${format}`, '_blank', 'noopener');
     setOpen(false);
   };
 
@@ -167,4 +167,4 @@ export function ExportButton({ fileId }) {
   );
 }
 
-// AlertToast removed — use showAlert() from utils/alerts.jsx instead.
+// AlertToast removed — use useModal().showAlert() from context/ModalContext instead.

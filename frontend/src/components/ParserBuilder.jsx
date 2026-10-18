@@ -38,6 +38,7 @@ export default function ParserBuilder({ parser, onBack, onRefresh, fileSamples }
     setMessage('');
     try {
       const res = await fetch(`${API_BASE}/parsers/suggest`, {
+        credentials: 'include',
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sampleLines })
       });
@@ -49,6 +50,7 @@ export default function ParserBuilder({ parser, onBack, onRefresh, fileSamples }
         setMessage(`Detected ${data.fields.length} fields with ${data.confidence}% confidence (${data.coverage}% sample coverage)`);
         try {
           const previewRes = await fetch(`${API_BASE}/parsers/preview`, {
+            credentials: 'include',
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ regexPattern: data.regexPattern, testLines: sampleLines })
           });
@@ -72,6 +74,7 @@ export default function ParserBuilder({ parser, onBack, onRefresh, fileSamples }
     if (!regexPattern) { setMessage('Generate fields first or enter a regex pattern'); return; }
     try {
       const res = await fetch(`${API_BASE}/parsers/preview`, {
+        credentials: 'include',
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ regexPattern, testLines: sampleLines })
       });

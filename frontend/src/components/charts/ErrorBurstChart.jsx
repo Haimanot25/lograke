@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
-import { API_BASE } from '../../config';
+import { useChartData } from '../../hooks/useChartData';
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
@@ -16,47 +16,43 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function ErrorBurstChart({ fileId, onNavigate }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { results, loading } = useChartData(fileId, (id) => [
+    `/logs/${id}/timeline?bucketMinutes=2`,
+    `/logs/${id}/chronology?bucketMinutes=2&anomalyThreshold=1.5`
+  ]);
 
-  useEffect(() => {
-    if (!fileId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-change; loading flag mirrors request lifecycle
-    setLoading(true);
-    Promise.all([
-      fetch(`${API_BASE}/logs/${fileId}/timeline?bucketMinutes=2`).then(r => r.json()),
-      fetch(`${API_BASE}/logs/${fileId}/chronology?bucketMinutes=2&anomalyThreshold=1.5`).then(r => r.json())
-    ]).then(([timeline, chron]) => {
-      const buckets = timeline.timeline || [];
-      const anomalies = chron.anomalies?.anomalies || [];
-      const stats = chron.anomalies?.stats || {};
-      const bursts = chron.temporalInsights?.bursts || [];
-      const gaps = chron.temporalInsights?.timeGaps || [];
+  const data = useMemo(() => {
+    if (!results) return null;
+    const [timeline, chron] = results;
+    const buckets = timeline.timeline || [];
+    const anomalies = chron.anomalies?.anomalies || [];
+    const stats = chron.anomalies?.stats || {};
+    const bursts = chron.temporalInsights?.bursts || [];
+    const gaps = chron.temporalInsights?.timeGaps || [];
 
-      const chartData = buckets.map(b => {
-        const anomaly = anomalies.find(a => a.startTime === b.startTime);
-        return {
-          time: new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          fullTime: b.startTime,
-          error: b.levels?.error || 0,
-          warn: b.levels?.warn || 0,
-          total: b.count,
-          isAnomaly: !!anomaly,
-          zScore: anomaly?.zScore || 0,
-          anomalyType: anomaly?.type || null
-        };
-      });
+    const chartData = buckets.map(b => {
+      const anomaly = anomalies.find(a => a.startTime === b.startTime);
+      return {
+        time: new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        fullTime: b.startTime,
+        error: b.levels?.error || 0,
+        warn: b.levels?.warn || 0,
+        total: b.count,
+        isAnomaly: !!anomaly,
+        zScore: anomaly?.zScore || 0,
+        anomalyType: anomaly?.type || null
+      };
+    });
 
-      setData({
-        chartData,
-        meanCount: stats.mean || 0,
-        stdDev: stats.stdDev || 0,
-        bursts,
-        gaps,
-        anomalyCount: anomalies.length
-      });
-    }).catch((e) => { console.warn('ErrorBurstChart fetch failed', e); }).finally(() => setLoading(false));
-  }, [fileId]);
+    return {
+      chartData,
+      meanCount: stats.mean || 0,
+      stdDev: stats.stdDev || 0,
+      bursts,
+      gaps,
+      anomalyCount: anomalies.length
+    };
+  }, [results]);
 
   if (loading) return <div className="chart-loading">Analyzing error bursts...</div>;
   if (!data?.chartData?.length) return <div className="chart-empty">No burst data available.</div>;

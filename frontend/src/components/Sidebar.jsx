@@ -118,7 +118,7 @@ function Sidebar() {
   const handleClearServerCache = async () => {
     if (!await showConfirm('Clear server analysis cache?')) return;
     try {
-      const res = await fetch(`${API_BASE}/logs/cache/clear`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fileId: activeFileId, clearParsed: true }) });
+      const res = await fetch(`${API_BASE}/logs/cache/clear`, { credentials: 'include', method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fileId: activeFileId, clearParsed: true }) });
       if (res.ok) showAlert('Server cache cleared.', 'Cache Cleared');
       else showAlert('Failed to clear server cache.', 'Error', 'error');
     } catch (err) { showAlert(`Error: ${err.message}`, 'Error', 'error'); }
@@ -133,7 +133,7 @@ function Sidebar() {
   const handleDelete = async () => {
     if (!activeFileId) return;
     if (!window.confirm('Delete this source and all analysis data?')) return;
-    const res = await fetch(`${API_BASE}/logs/${activeFileId}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/logs/${activeFileId}`, { credentials: 'include', method: 'DELETE' });
     if (res.ok) { setActiveFileId(''); fetchFiles(); }
   };
 

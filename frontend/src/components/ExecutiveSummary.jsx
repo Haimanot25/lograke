@@ -9,7 +9,7 @@ export default function ExecutiveSummary({ fileId }) {
   const fetchSummary = async () => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${API_BASE}/logs/${fileId}/ai-summary`);
+      const res = await fetch(`${API_BASE}/logs/${fileId}/ai-summary`, { credentials: 'include' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch AI summary');
       setSummary(data.summary);

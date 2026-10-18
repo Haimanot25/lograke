@@ -17,7 +17,7 @@ export function FileProvider({ children }) {
 
   const fetchFiles = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/logs/files`);
+      const res = await fetch(`${API_BASE}/logs/files`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setFiles(data.files || []);
@@ -33,7 +33,7 @@ export function FileProvider({ children }) {
 
   const fetchFileDetail = useCallback(async (fileId, signal) => {
     try {
-      const res = await fetch(`${API_BASE}/logs/${fileId}/metadata`, { signal });
+      const res = await fetch(`${API_BASE}/logs/${fileId}/metadata`, { credentials: 'include', signal });
       if (res.ok) {
         const data = await res.json();
         if (data.success) setSelectedFileDetail(data.metadata);

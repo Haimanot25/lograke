@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
-import { API_BASE } from '../../config';
+import { useChartData } from '../../hooks/useChartData';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -17,45 +17,34 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function MetricsTimeSeries({ fileId }) {
-  const [durationData, setDurationData] = useState(null);
-  const [statusData, setStatusData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [metricTab, setMetricTab] = useState('duration');
 
-  useEffect(() => {
-    if (!fileId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-change; loading flag mirrors request lifecycle
-    setLoading(true);
-    Promise.all([
-      fetch(`${API_BASE}/logs/${fileId}/metrics-series?metric=durationMs`).then(r => r.json()),
-      fetch(`${API_BASE}/logs/${fileId}/metrics-series?metric=statusCode`).then(r => r.json())
-    ]).then(([dur, status]) => {
-      if (dur.bucketedStats?.length) {
-        setDurationData({
-          stats: dur.stats,
-          chartData: dur.bucketedStats.map(b => ({
-            time: b.time.split(' ')[1] || b.time,
-            avg: Math.round(b.avg * 10) / 10,
-            min: Math.round(b.min * 10) / 10,
-            max: Math.round(b.max * 10) / 10,
-            count: b.count
-          }))
-        });
-      }
-      if (status.bucketedStats?.length) {
-        setStatusData({
-          stats: status.stats,
-          chartData: status.bucketedStats.map(b => ({
-            time: b.time.split(' ')[1] || b.time,
-            avg: Math.round(b.avg),
-            min: Math.round(b.min),
-            max: Math.round(b.max),
-            count: b.count
-          }))
-        });
-      }
-    }).catch((e) => { console.warn('MetricsTimeSeries fetch failed', e); }).finally(() => setLoading(false));
-  }, [fileId]);
+  const { results, loading } = useChartData(fileId, (id) => [
+    `/logs/${id}/metrics-series?metric=durationMs`,
+    `/logs/${id}/metrics-series?metric=statusCode`
+  ]);
+
+  const [durationData, statusData] = useMemo(() => {
+    if (!results) return [null, null];
+    const [dur, status] = results;
+    const build = (d, round) => {
+      if (!d.bucketedStats?.length) return null;
+      return {
+        stats: d.stats,
+        chartData: d.bucketedStats.map(b => ({
+          time: b.time.split(' ')[1] || b.time,
+          avg: round(b.avg),
+          min: round(b.min),
+          max: round(b.max),
+          count: b.count
+        }))
+      };
+    };
+    return [
+      build(dur, v => Math.round(v * 10) / 10),
+      build(status, v => Math.round(v))
+    ];
+  }, [results]);
 
   if (loading) return <div className="chart-loading">Loading metrics...</div>;
 

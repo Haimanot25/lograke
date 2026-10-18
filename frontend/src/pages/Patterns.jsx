@@ -6,13 +6,7 @@ import { API_BASE } from '../config';
 import { useToastCtx } from '../context/ToastContext';
 import { useFileContext } from '../context/FileContext';
 
-function escapeForRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function patternToRegex(template) {
-  return escapeForRegex(template).replace(/<[^>]+>/g, '.*');
-}
+import { patternToRegex } from '../utils/pattern';
 
 function highlightMatch(text, query) {
   if (!query || !text) return text;
@@ -131,12 +125,11 @@ export default function Patterns() {
           level: levelFilter,
           search: debouncedSearch
         });
-        const response = await fetch(`${API_BASE}/logs/${fileId}/patterns?${params}`);
+        const response = await fetch(`${API_BASE}/logs/${fileId}/patterns?${params}`, { credentials: 'include' });
         if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to load patterns`);
         const data = await response.json();
         setPatterns(Array.isArray(data.patterns) ? data.patterns : []);
         setTotalPatterns(data.total || 0);
-        setTotalLogLines(selectedFile?.linesCount || 0);
       } catch (err) {
         console.error('Pattern load error:', err);
         setError(err.message);
@@ -147,6 +140,11 @@ export default function Patterns() {
     };
     if (fileId) loadPatterns();
   }, [fileId, page, debouncedSearch, levelFilter, sortBy, sortDir]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors the selected file's line count into local display state
+    setTotalLogLines(selectedFile?.linesCount || 0);
+  }, [selectedFile]);
 
   const levels = useMemo(() => {
     const s = new Set(patterns.map(p => p.level));

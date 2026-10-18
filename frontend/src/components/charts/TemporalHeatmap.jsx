@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { API_BASE } from '../../config';
+import { useChartData } from '../../hooks/useChartData';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -17,41 +17,35 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 export default function TemporalHeatmap({ fileId }) {
-  const [hourlyData, setHourlyData] = useState(null);
-  const [dailyData, setDailyData] = useState(null);
-  const [heatmapData, setHeatmapData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [viewTab, setViewTab] = useState('hourly');
 
-  useEffect(() => {
-    if (!fileId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-change; loading flag mirrors request lifecycle
-    setLoading(true);
-    fetch(`${API_BASE}/logs/${fileId}/temporal-patterns`)
-      .then(r => r.json())
-      .then(d => {
-        const hourly = HOURS.map(h => ({
-          hour: h,
-          label: `${h}:00`,
-          name: `${h}:00`,
-          count: d.byHour?.[h] || 0
-        }));
-        setHourlyData(hourly);
+  const { results, loading } = useChartData(fileId, (id) => [`/logs/${id}/temporal-patterns`]);
 
-        const daily = DAYS.map((day) => ({
-          day,
-          label: day,
-          name: day,
-          count: d.byDayOfWeek?.[day] || 0
-        }));
-        setDailyData(daily);
+  const { hourlyData, dailyData, heatmapData } = useMemo(() => {
+    if (!results) return { hourlyData: null, dailyData: null, heatmapData: null };
+    const d = results[0];
 
-        const maxCount = Math.max(1, ...hourly.map(h => h.count));
-        setHeatmapData({ hourly, daily, maxCount, peakHour: d.peakHour, peakDay: d.peakDayOfWeek });
-      })
-      .catch((e) => { console.warn('TemporalHeatmap fetch failed', e); })
-      .finally(() => setLoading(false));
-  }, [fileId]);
+    const hourly = HOURS.map(h => ({
+      hour: h,
+      label: `${h}:00`,
+      name: `${h}:00`,
+      count: d.byHour?.[h] || 0
+    }));
+
+    const daily = DAYS.map((day) => ({
+      day,
+      label: day,
+      name: day,
+      count: d.byDayOfWeek?.[day] || 0
+    }));
+
+    const maxCount = Math.max(1, ...hourly.map(h => h.count));
+    return {
+      hourlyData: hourly,
+      dailyData: daily,
+      heatmapData: { hourly, daily, maxCount, peakHour: d.peakHour, peakDay: d.peakDayOfWeek }
+    };
+  }, [results]);
 
   if (loading) return <div className="chart-loading">Loading temporal patterns...</div>;
   if (!heatmapData) return <div className="chart-empty">No temporal data available.</div>;

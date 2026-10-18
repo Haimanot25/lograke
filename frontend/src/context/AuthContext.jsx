@@ -80,12 +80,8 @@ export function AuthProvider({ children }) {
     fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
   }, []);
 
-  const authFetch = useCallback(async (url, options = {}) => {
-    return fetch(url, { ...options, credentials: 'include' });
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, authFetch }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

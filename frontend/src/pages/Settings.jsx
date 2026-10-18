@@ -30,7 +30,7 @@ export default function Settings({ onSettingsChange }) {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/settings`);
+      const res = await fetch(`${API_BASE}/settings`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         const s = data.settings || {};
@@ -73,6 +73,7 @@ export default function Settings({ onSettingsChange }) {
 
     try {
       const res = await fetch(`${API_BASE}/settings`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

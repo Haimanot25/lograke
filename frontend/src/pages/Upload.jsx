@@ -1,13 +1,14 @@
 import { Inbox, Upload as UploadIcon, FileText, Database, ChevronRight, Trash2 } from 'lucide-react';
-import { showAlert } from '../utils/alerts';
 import { API_BASE } from '../config';
 import { useFileContext } from '../context/FileContext';
 import { useUI } from '../context/UIContext';
+import { useModal } from '../context/ModalContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function UploadPage() {
   const { files, setActiveFileId, fetchFiles, customParsers } = useFileContext();
   const { selectedLogType, setSelectedLogType, multiLineEDR, setMultiLineEDR, dragActive, handleDrag, handleDrop, pasteText, setPasteText, pasteName, setPasteName, loading, setLoading } = useUI();
+  const { showAlert } = useModal();
   const navigate = useNavigate();
 
   const handleFileUpload = async (uploadFiles) => {
@@ -24,7 +25,7 @@ export default function UploadPage() {
     try {
       const saved = localStorage.getItem('lograke-anonymize');
       formData.append('anonymize', saved || JSON.stringify({ email: true, ip: true, creditCard: true, credentials: true }));
-      const res = await fetch(`${API_BASE}/logs/upload`, { method: 'POST', body: formData });
+      const res = await fetch(`${API_BASE}/logs/upload`, { credentials: 'include', method: 'POST', body: formData });
       if (res.ok) {
         const data = await res.json();
         await fetchFiles();
@@ -54,7 +55,7 @@ export default function UploadPage() {
   }; 
   const handleDelete = async (fileId) => {
     if (!window.confirm('Delete this source and all analysis data?')) return;
-    const res = await fetch(`${API_BASE}/logs/${fileId}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/logs/${fileId}`, { credentials: 'include', method: 'DELETE' });
     if (res.ok) fetchFiles();
     else showAlert('Failed to delete source', 'Error', 'error');
   };
@@ -69,6 +70,7 @@ export default function UploadPage() {
       };
       if (selectedLogType.startsWith('custom_')) body.parserId = selectedLogType.replace('custom_', '');
       const res = await fetch(`${API_BASE}/logs/ingest/raw`, {
+        credentials: 'include',
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
       });
       if (res.ok) {

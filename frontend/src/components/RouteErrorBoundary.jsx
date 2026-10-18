@@ -75,14 +75,3 @@ export class RouteErrorBoundary extends React.Component {
     return children;
   }
 }
-
-// eslint-disable-next-line react-refresh/only-export-components -- HOC co-located with its boundary component; splitting would break existing imports
-export default function withErrorBoundary(Component, fallback) {
-  return function WithErrorBoundary(props) {
-    return (
-      <RouteErrorBoundary fallback={fallback}>
-        <Component {...props} />
-      </RouteErrorBoundary>
-    );
-  };
-}

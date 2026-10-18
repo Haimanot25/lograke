@@ -51,26 +51,4 @@ export const NavIcons = {
   health: Heart,
 };
 
-export const MiscIcons = {
-  uploadInbox: Inbox,
-  download: Download,
-  exportJson: FileJson,
-  exportCsv: FileSpreadsheet,
-  exportMarkdown: FileDown,
-  info: Info,
-  clock: Clock,
-  chevronDown: ChevronDown,
-  chevronRight: ChevronRight,
-  loading: Loader2,
-  pause: Pause,
-  play: Play,
-  check: CheckCircle2,
-  error: XCircle,
-  warn: AlertTriangle,
-  alertCircle: AlertCircle,
-  sun: Sun,
-  moon: Moon,
-  palette: Palette,
-};
-
 export { Upload, LayoutDashboard, Webhook, Radio, Search, Globe, Puzzle, BarChart3, GitCompare, FileText, Settings, AlertTriangle, Network, Heart, Inbox, Download, FileJson, FileSpreadsheet, FileDown, Info, Clock, ChevronDown, ChevronRight, Loader2, Pause, Play, CheckCircle2, XCircle, AlertCircle, Sun, Moon, Palette };

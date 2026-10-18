@@ -17,7 +17,7 @@ export default function Statistics() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/logs/${fileId}/metadata`);
+        const res = await fetch(`${API_BASE}/logs/${fileId}/metadata`, { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setMeta(data.metadata);

@@ -93,7 +93,8 @@ export default function LiveTail() {
   useEffect(() => {
     if (!isStreaming) {
       cleanup();
-      if (connectionStatus !== 'failed') setConnectionStatus('paused');
+      // Keep a terminal 'failed' status visible instead of flipping to 'paused'
+      setConnectionStatus(prev => (prev === 'failed' ? prev : 'paused'));
       return;
     }
 

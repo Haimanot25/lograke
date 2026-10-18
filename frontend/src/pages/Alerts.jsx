@@ -29,7 +29,7 @@ export default function Alerts() {
   const loadAlerts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/logs/${fileId}/alerts`);
+      const res = await fetch(`${API_BASE}/logs/${fileId}/alerts`, { credentials: 'include' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setRules(data.rules || []);
@@ -44,7 +44,7 @@ export default function Alerts() {
   const loadNotifSettings = async () => {
     setNotifLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/notifications/settings`);
+      const res = await fetch(`${API_BASE}/notifications/settings`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setNotifSettings(data.settings || []);
@@ -63,7 +63,7 @@ export default function Alerts() {
 
   const handleEvaluate = async () => {
     try {
-      const res = await fetch(`${API_BASE}/logs/${fileId}/alerts/evaluate`);
+      const res = await fetch(`${API_BASE}/logs/${fileId}/alerts/evaluate`, { credentials: 'include' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setAlerts(data.alerts || []);
@@ -82,6 +82,7 @@ export default function Alerts() {
     setMessage('');
     try {
       const res = await fetch(`${API_BASE}/logs/${fileId}/alerts`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRule)
@@ -109,6 +110,7 @@ export default function Alerts() {
     }
     try {
       const res = await fetch(`${API_BASE}/notifications/settings`, {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newNotif)
@@ -128,6 +130,7 @@ export default function Alerts() {
   const handleToggleNotif = async (id, enabled) => {
     try {
       await fetch(`${API_BASE}/notifications/settings/${id}`, {
+        credentials: 'include',
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled })
@@ -138,7 +141,7 @@ export default function Alerts() {
 
   const handleDeleteNotif = async (id) => {
     try {
-      await fetch(`${API_BASE}/notifications/settings/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/notifications/settings/${id}`, { credentials: 'include', method: 'DELETE' });
       loadNotifSettings();
     } catch (err) { console.warn('[Alerts] handleDeleteNotif failed:', err); }
   };
