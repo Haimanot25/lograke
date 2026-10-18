@@ -1,16 +1,54 @@
-# React + Vite
+# Lograke Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite UI for the Lograke log intelligence platform.
 
-Currently, two official plugins are available:
+## Quick start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev        # http://localhost:5173 (proxies /api to http://localhost:5000)
+```
 
-## React Compiler
+The backend must be running (see the [root README](../README.md)):
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+cd ../backend && npm start
+```
 
-## Expanding the ESLint configuration
+## Scripts
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Command           | Description                          |
+|-------------------|--------------------------------------|
+| `npm run dev`     | Dev server with HMR                  |
+| `npm run build`   | Production build to `dist/`          |
+| `npm run preview` | Preview the production build         |
+| `npm run lint`    | ESLint                               |
+| `npm test`        | Vitest unit tests                    |
+
+## Configuration
+
+The frontend reads `VITE_API_BASE` from `.env` in this directory. **Leave it unset** —
+by default requests go to `/api` on the same origin (proxied to port 5000 in dev, and
+served directly by the backend in production), which keeps the auth cookie working.
+
+See `.env.example` for details.
+
+## Architecture
+
+```
+src/
+├── App.jsx            # Router + lazy-loaded routes
+├── AppShell.jsx       # Authenticated layout (sidebar, header, toasts)
+├── components/        # Reusable UI (charts, sidebar, modals, timeline)
+├── context/           # Auth, file selection, toasts, modals, UI state
+├── hooks/             # URL state, alert SSE, explorer logic, a11y
+├── pages/             # Route-level screens (Dashboard, Explorer, …)
+├── utils/             # API client, alerts, parser helpers
+├── design-system.css  # Shared design tokens and component styles
+└── index.css          # Global styles
+```
+
+- **API client**: `src/utils/api.js` (`fetchJSON` handles auth, errors, and JSON parsing)
+- **Auth**: JWT stored in an httpOnly cookie by the backend; `AuthContext` manages state
+- **State**: server state is fetched per page; UI state lives in contexts and URL params
+- **Tests**: colocated under `src/**/__tests__/` (Vitest + Testing Library)

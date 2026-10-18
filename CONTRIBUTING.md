@@ -31,7 +31,7 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 
 1. Fork and clone the repo
 2. Install dependencies: `npm run install:all`
-3. Copy `.env.example` to `.env` and adjust as needed
+3. Copy the env template: `cp .env.example backend/.env` (the backend loads `.env` from its own directory) and adjust as needed
 4. Run the app: `npm run dev` (starts both backend on port 5000 and frontend on port 5173)
 5. Open http://localhost:5173
 

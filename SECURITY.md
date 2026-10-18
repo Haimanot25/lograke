@@ -17,10 +17,12 @@ Lograke includes the following security features:
 
 ### Backend Security
 - **Helmet.js** for HTTP security headers (CSP, HSTS, X-Frame-Options, etc.)
-- **Rate limiting** on API endpoints (general: 100/15min, uploads: 10/min, AI: 20/min)
-- **JWT authentication** (optional, controlled via `AUTH_ENABLED` env var)
-- **Input validation** middleware on all routes
+- **Rate limiting** on API endpoints (general: 100/min, uploads: 10/min, AI: 20/min, login: 20/15min)
+- **JWT authentication** (on by default, controlled via `AUTH_ENABLED` env var)
+- **Role-based access control** (admin/user roles for privileged endpoints)
+- **Input validation** middleware on mutating routes
 - **SQL injection prevention** via parameterized queries and better-sqlite3
+- **ReDoS protection** for user-supplied patterns via `safe-regex2`
 - **Error message sanitization** - internal errors never leak to clients
 - **Configurable CORS** via environment variables
 - **Request body size limits** (10MB default)
@@ -43,16 +45,40 @@ CORS_ORIGIN=https://yourdomain.com  # Don't use * in production
 
 ## Authentication
 
-When `AUTH_ENABLED=true`, the following endpoints require a valid JWT token:
+When `AUTH_ENABLED=true` (the default), all API endpoints except login/registration
+and webhook ingestion require a valid JWT token.
 
-- `POST /api/logs/settings` (settings modification)
-- Any endpoint marked as protected
+### Accounts
 
-### Default Credentials
-- Username: `admin`
-- Password: `lograke`
+There are **no default or seeded accounts**. The first user to register on a fresh
+instance is granted the `admin` role; every subsequent user gets the `user` role.
+Choose a strong password at registration — there is no password reset flow, so an
+admin can only restore access by editing the `users` table directly.
 
-**Change these immediately in production.**
+Privileged operations (custom parsers, notification settings, log sources) require
+the `admin` role.
+
+## Deployment Considerations
+
+Lograke is designed to run on a trusted, single-organization network. Be aware of
+the following when exposing it more widely:
+
+- **Single-tenant data model**: parsed log files are not isolated per user. Anyone
+  with an account can view any uploaded file. Do not let untrusted parties register
+  on a shared instance.
+- **Settings endpoint**: `POST /api/settings` stores AI provider keys for the whole
+  instance. Restrict who can reach it (network-level or `AUTH_ENABLED` + trusted
+  users).
+- **Ingestion surfaces**: syslog (UDP/TCP), webhook, and HTTP-poll sources accept
+  logs from the network. Bind them to trusted interfaces only and use firewall rules.
+- **Archive uploads**: upload size limits apply to archives, not to their
+  decompressed contents. Prefer ingesting plain text/log files from sources you
+  control.
+- **AI providers**: when AI features are used, log excerpts are sent to the
+  configured provider (Groq/Gemini/Grok) — or stay local with Ollama. Review the
+  provider's data policy before enabling.
+
+Report anything not listed here as a vulnerability via the process below.
 
 ## Dependencies
 

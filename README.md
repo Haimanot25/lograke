@@ -99,16 +99,18 @@ npm run start    # Starts backend (serves built frontend)
 ### Testing
 
 ```bash
-# Backend unit tests (74 tests, 6 suites)
+# Backend unit tests (6 suites)
 npm run test:backend
 
-# Frontend unit tests (19 tests, 6 suites)
+# Frontend unit tests (6 suites)
 npm run test:frontend
 
 # All unit tests
 npm test
 
-# E2E smoke tests (requires backend running)
+# E2E smoke tests (Playwright auto-starts the backend)
+npm run install:e2e   # one-time: installs Playwright + Chromium
+npm run build         # the smoke test serves the built frontend
 npm run test:e2e
 ```
 
@@ -121,24 +123,29 @@ npm run test:e2e
 | `PORT` | Backend server port | `5000` |
 | `NODE_ENV` | Environment mode | `development` |
 | `CORS_ORIGIN` | Allowed origins (`*` or comma-separated) | `*` |
+| `CORS_CREDENTIALS` | Allow credentialed CORS requests (keep `false` with `CORS_ORIGIN=*`) | `false` |
 | `AUTH_ENABLED` | Enable JWT authentication | `true` (set `false` to disable) |
 | `JWT_SECRET` | Secret for JWT signing | Required in production; auto-generated in development |
 | `JWT_EXPIRES_IN` | JWT token expiry | `7d` |
+| `DB_PATH` | SQLite database location | `./data/lograke.db` |
+| `PUBLIC_URL` | External base URL for generated webhook URLs | request origin |
+| `TRUST_PROXY` | Trusted proxy hops when behind nginx/traefik | unset |
 | `ACTIVE_AI_PROVIDER` | AI provider: `groq`, `gemini`, `grok`, `ollama` | `groq` |
 | `GROQ_API_KEY` | Groq API key (free) | - |
 | `GEMINI_API_KEY` | Google Gemini API key | - |
 | `GROK_API_KEY` | xAI Grok API key | - |
 | `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
 | `MAX_JSON_BODY` | Max request body size | `10mb` |
+| `MAX_FILE_SIZE` | Max upload size in bytes | `10485760` (10MB) |
 | `LOG_LEVEL` | Logging level | `info` |
-| `VITE_API_BASE` | Frontend API base URL | `http://localhost:5000/api` |
+| `VITE_API_BASE` | Frontend API base URL (frontend only) | `/api` (same-origin proxy) |
 
-See `backend/.env.example` and `frontend/.env.example` for full templates.
+See `.env.example` (root, fully commented), `backend/.env.example`, and `frontend/.env.example` for templates.
 
 ## Security
 
 - **Helmet.js**: HTTP security headers (CSP, HSTS, X-Frame-Options)
-- **Rate Limiting**: General (100/15min), uploads (10/min), AI (20/min)
+- **Rate Limiting**: general (100/min), uploads (10/min), AI (20/min), login (20/15min)
 - **JWT Authentication**: Enabled by default (first registered user becomes admin); set `AUTH_ENABLED=false` to disable
 - **Input Validation**: Middleware-based request validation
 - **SQL Injection Prevention**: Parameterized queries via better-sqlite3
@@ -150,7 +157,7 @@ See [SECURITY.md](SECURITY.md) for details.
 ## Project Structure
 
 ```
-Log2/
+lograke/
 ├── backend/
 │   ├── src/
 │   │   ├── ai/              # AI integration (multi-provider)
@@ -164,20 +171,23 @@ Log2/
 │   │   ├── services/        # Business logic
 │   │   ├── db.js            # Database setup (SQLite + indexes)
 │   │   └── index.js         # Server entry
-│   ├── data/                # Data storage
-│   ├── uploads/             # Temporary uploads
+│   ├── __tests__/           # Jest test suites
+│   ├── uploads/             # Temporary uploads (gitignored)
 │   ├── package.json
 │   └── .env.example
 ├── frontend/
 │   ├── src/
 │   │   ├── components/      # React components
 │   │   ├── pages/           # Page components
+│   │   ├── hooks/           # Custom hooks
+│   │   ├── context/         # React contexts (auth, files, UI)
 │   │   ├── utils/           # Utilities (API, alerts)
 │   │   ├── config.js        # API_BASE configuration
 │   │   ├── App.jsx          # Main app
 │   │   └── main.jsx         # Entry point (with ErrorBoundary)
 │   ├── package.json
 │   └── vite.config.js
+├── data/                    # SQLite database (gitignored, created at runtime)
 ├── .github/workflows/       # CI/CD (lint → test → build)
 ├── .dockerignore
 ├── Dockerfile               # Multi-stage build (non-root user)
@@ -204,15 +214,18 @@ Log2/
 ## Docker
 
 ```bash
-# Build and run with Docker Compose
+# Generate a secret once, then build and run with Docker Compose
+export JWT_SECRET=$(openssl rand -hex 32)   # Windows PowerShell: $env:JWT_SECRET = -join ((1..32) | ForEach-Object { '{0:x}' -f (Get-Random -Max 16) })
 docker compose up -d
 
 # Or build and run manually
 docker build -t lograke .
-docker run -d -p 5000:5000 -v lograke_data:/app/data lograke
+docker run -d -p 5000:5000 -e JWT_SECRET=<your-secret> -v lograke_data:/app/data lograke
 ```
 
-Set environment variables via `.env` or the `environment` section in `docker-compose.yml`. See `.env.example` for all available options.
+`JWT_SECRET` is **required** — the container exits at startup without it (the compose
+file fails fast with a clear message). Set other environment variables via `.env` or
+the `environment` section in `docker-compose.yml`. See `.env.example` for all options.
 
 ## Contributing
 
