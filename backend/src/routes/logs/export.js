@@ -1,5 +1,13 @@
 const { store } = require('./shared');
 
+// Security finding #7 (CSV formula injection): spreadsheet applications
+// execute cells beginning with = + - @ (also tab/CR). Neutralize with a
+// leading apostrophe, which Excel/Sheets treat as a literal-text escape.
+function neutralizeFormula(value) {
+  const s = String(value ?? '');
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+}
+
 function register(router) {
   // 11. Export matching logs (JSON, CSV, or Markdown) — capped at 10,000 entries
   router.get('/:fileId/export', (req, res) => {
@@ -28,11 +36,11 @@ function register(router) {
       const chunks = ['Index,Timestamp,Level,Message,IDs,Metadata\n'];
       exportLogs.forEach(log => {
         const idx = log.index;
-        const ts = log.timestamp;
-        const lvl = log.level.toUpperCase();
-        const msg = `"${log.message.replace(/"/g, '""')}"`;
-        const idsStr = `"${JSON.stringify(log.ids).replace(/"/g, '""')}"`;
-        const metaStr = `"${JSON.stringify(log.metadata).replace(/"/g, '""')}"`;
+        const ts = neutralizeFormula(log.timestamp);
+        const lvl = neutralizeFormula(log.level.toUpperCase());
+        const msg = `"${neutralizeFormula(log.message).replace(/"/g, '""')}"`;
+        const idsStr = `"${neutralizeFormula(JSON.stringify(log.ids)).replace(/"/g, '""')}"`;
+        const metaStr = `"${neutralizeFormula(JSON.stringify(log.metadata)).replace(/"/g, '""')}"`;
         chunks.push(`${idx},${ts},${lvl},${msg},${idsStr},${metaStr}\n`);
       });
 

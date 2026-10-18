@@ -174,6 +174,27 @@ describe('logs lifecycle', () => {
     expect(res.text).toContain('# Lograke Export Summary');
   });
 
+  // Security fix #7 (CSV formula injection): cells starting with = + - @ are
+  // prefixed with an apostrophe so spreadsheets treat them as text.
+  it('neutralizes CSV formula injection in exported cells', async () => {
+    const ing = await request(app)
+      .post('/api/logs/ingest/raw')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ sourceName: 'formula.log', rawText: '=cmd|"/C calc"!A0' });
+    expect(ing.status).toBe(200);
+
+    const res = await request(app)
+      .get(`/api/logs/${ing.body.file.id}/export`)
+      .query({ format: 'csv' })
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("'=cmd|");
+
+    await request(app)
+      .delete(`/api/logs/${ing.body.file.id}`)
+      .set('Authorization', `Bearer ${token}`);
+  });
+
   it('accepts a multipart file upload', async () => {
     const res = await request(app)
       .post('/api/logs/upload')

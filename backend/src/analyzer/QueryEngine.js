@@ -1,6 +1,7 @@
 /**
  * QueryEngine - Supports lightweight log DSL search and filtering.
  */
+const { compileSafe } = require('../utils/safeRegex');
 const COMPARE_OPERATORS = ['>=', '<=', '!=', '>', '<', '='];
 
 function parseToken(token) {
@@ -74,7 +75,9 @@ function buildPredicate(token) {
   // Handle patterns like "<NUM>" or "<PATH>" by converting them to regex
   if (value.includes('<NUM>') || value.includes('<PATH>') || value.includes('<UUID>') || value.includes('<IP>')) {
     const regexPattern = value.replace(/<NUM>/g, '\\d+').replace(/<PATH>/g, '[^\\s]+').replace(/<UUID>/g, '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}').replace(/<IP>/g, '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}');
-    const matcher = new RegExp(regexPattern, 'i');
+    // Security fix #3 (ReDoS): user-supplied parts of the pattern are validated
+    // by safe-regex2; unsafe patterns are rejected with 400 instead of hanging
+    const matcher = compileSafe(regexPattern, 'i');
     return (log) => {
       return matcher.test(log.message) || matcher.test(log.raw);
     };
@@ -86,8 +89,11 @@ function buildPredicate(token) {
   if (targetField === 'regex' && normalizedValue) {
     let matcher;
     try {
-      matcher = new RegExp(normalizedValue, 'i');
+      matcher = compileSafe(normalizedValue, 'i');
     } catch (e) {
+      // Overly complex (ReDoS) patterns surface as a 400 — never run them.
+      // Invalid syntax keeps the legacy behavior of matching nothing.
+      if (e.isOperational) throw e;
       return () => false;
     }
     const safeMatcher = matcher;

@@ -17,6 +17,7 @@ const notificationsRouter = require('./routes/notifications');
 const parsersRouter = require('./routes/parsers');
 const logSourcesRouter = require('./routes/logSources');
 const sourceManager = require('./services/SourceManager');
+const RetentionPruner = require('./services/RetentionPruner');
 const { isEnabled, getActiveProvider } = require('./ai/AiService');
 const { evaluateAlerts } = require('./analyzer/AlertEngine');
 const { dispatchAlert } = require('./services/NotificationService');
@@ -203,10 +204,18 @@ function startServer() {
   const alertTimer = startAlertEvaluator();
   alertTimer.unref();
 
+  // ── Storage retention (opt-in via STORAGE_MAX_AGE_DAYS, default off) ──
+  const retentionPruner = new RetentionPruner();
+  retentionPruner.start(); // startup sweep + hourly interval; no-op when disabled
+  if (retentionPruner.enabled) {
+    logger.info(`Storage retention enabled: raw files older than ${retentionPruner.maxAgeDays} day(s) are pruned hourly`);
+  }
+
   // ── Graceful shutdown ──────────────────────────────────────────
   function shutdown(signal) {
     logger.info(`${signal} received — shutting down gracefully...`);
     clearInterval(alertTimer);
+    retentionPruner.stop();
     server.close(() => {
       logger.info('HTTP server closed');
       sourceManager.stopAll().catch(() => {});

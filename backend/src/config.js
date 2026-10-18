@@ -39,7 +39,10 @@ const config = {
   },
   upload: {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 10 * 1024 * 1024,
-    maxJsonBody: process.env.MAX_JSON_BODY || '10mb'
+    maxJsonBody: process.env.MAX_JSON_BODY || '10mb',
+    // Archive extraction caps — decompression-bomb protection (finding #6)
+    maxExtractedBytes: (parseInt(process.env.ARCHIVE_MAX_EXTRACTED_MB, 10) || 512) * 1024 * 1024,
+    maxArchiveEntries: parseInt(process.env.ARCHIVE_MAX_ENTRIES, 10) || 5000
   },
   log: {
     level: process.env.LOG_LEVEL || 'info'

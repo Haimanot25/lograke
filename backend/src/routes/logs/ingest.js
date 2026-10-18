@@ -249,6 +249,10 @@ function register(router) {
         files: results
       });
     } catch (err) {
+      // Archive rejections (bombs, caps) are client errors, not server errors
+      if (err.isOperational) {
+        return res.status(err.statusCode || 413).json({ error: err.message });
+      }
       logger.error('Upload process failed:', err);
       res.status(500).json({ error: 'File processing failed' });
     }

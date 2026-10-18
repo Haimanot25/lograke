@@ -84,4 +84,30 @@ describe('filterLogs', () => {
   it('returns nothing when no log matches', () => {
     expect(filterLogs(logs, 'unicorn-munchies')).toHaveLength(0);
   });
+
+  // Security fix #3 (ReDoS): catastrophic patterns are rejected up front
+  // with a 400 instead of being executed against the log corpus.
+  it('rejects catastrophic backtracking regex: patterns with a 400', () => {
+    let err;
+    try {
+      filterLogs(logs, 'regex:(a+)+$');
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(err.statusCode).toBe(400);
+    expect(err.isOperational).toBe(true);
+    expect(err.message).toMatch(/too complex/i);
+  });
+
+  it('rejects unsafe pattern-token expansions too', () => {
+    let err;
+    try {
+      filterLogs(logs, 'message:(a+)+<NUM>');
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(err.statusCode).toBe(400);
+  });
 });
