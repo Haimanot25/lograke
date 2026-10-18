@@ -1,10 +1,15 @@
 const rateLimit = require('express-rate-limit');
 
+// Rate limits don't apply to the test suite (jest sets NODE_ENV=test) so
+// integration tests aren't throttled while exercising the API.
+const skipInTests = () => process.env.NODE_ENV === 'test';
+
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTests,
   message: { error: 'Too many requests, please try again later.' }
 });
 
@@ -13,6 +18,7 @@ const uploadLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTests,
   message: { error: 'Upload limit reached. Please wait before uploading again.' }
 });
 
@@ -21,6 +27,7 @@ const aiLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTests,
   message: { error: 'AI request limit reached. Please wait before sending more requests.' }
 });
 
@@ -29,6 +36,7 @@ const loginLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTests,
   message: { error: 'Too many login attempts, please try again later.' }
 });
 
@@ -55,7 +63,7 @@ function checkProviderRateLimit(provider, maxPerMinute = 15) {
   return true;
 }
 
-// Cleanup stale entries every 5 minutes
+// Cleanup stale entries every 5 minutes (unref so it never keeps the process alive)
 setInterval(() => {
   const now = Date.now();
   const cutoff = now - 60000;
@@ -63,6 +71,6 @@ setInterval(() => {
     while (entries.length > 0 && entries[0] < cutoff) entries.shift();
     if (entries.length === 0) providerUsage.delete(provider);
   }
-}, 300000);
+}, 300000).unref();
 
 module.exports = { generalLimiter, uploadLimiter, aiLimiter, loginLimiter, checkProviderRateLimit };

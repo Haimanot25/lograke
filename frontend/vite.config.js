@@ -36,6 +36,15 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.{js,jsx}'],
       exclude: ['src/**/*.test.*', 'src/main.jsx'],
+      // Regression floor set at the baseline established by the current suite
+      // (most page components are covered by e2e, not unit tests). Raise as
+      // coverage grows — never lower these.
+      thresholds: {
+        statements: 2,
+        branches: 38,
+        functions: 16,
+        lines: 2,
+      },
     },
   },
 })

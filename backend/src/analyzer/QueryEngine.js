@@ -4,14 +4,17 @@
 const COMPARE_OPERATORS = ['>=', '<=', '!=', '>', '<', '='];
 
 function parseToken(token) {
+  // Colon field:value syntax wins over comparison operators so values may
+  // contain <, > or = (e.g. regex:<NUM>, url=http://x). Comparison operators
+  // are only parsed for tokens without a colon (e.g. statusCode>=500).
+  const parts = token.split(':');
+  if (parts.length >= 2) {
+    return { field: parts[0].trim(), operator: '=', value: parts.slice(1).join(':').trim() };
+  }
   const numericComparison = COMPARE_OPERATORS.find(op => token.includes(op));
   if (numericComparison) {
     const [left, right] = token.split(numericComparison);
     return { field: left.trim(), operator: numericComparison, value: right.trim() };
-  }
-  const parts = token.split(':');
-  if (parts.length >= 2) {
-    return { field: parts[0].trim(), operator: '=', value: parts.slice(1).join(':').trim() };
   }
   return { field: null, operator: null, value: token.trim() };
 }
@@ -22,12 +25,16 @@ function normalizeValue(value) {
 }
 
 function matchesWildcard(target, pattern) {
-  const escaped = pattern.replace(/[-/\\^$+?.()|[\]{}]/g, '\\$&').replace(/\\\*/g, '.*');
+  // Escape regex metacharacters (including *), then turn the escaped \*
+  // back into a .* wildcard match.
+  const escaped = pattern.replace(/[-/\\^$+?.()|[\]{}*]/g, '\\$&').replace(/\\\*/g, '.*');
   return new RegExp(`^${escaped}$`, 'i').test(target);
 }
 
 function fieldValue(log, field) {
-  switch (field) {
+  const key = String(field);
+  const lower = key.toLowerCase();
+  switch (lower) {
     case 'level': return log.level;
     case 'service': return log.service || log.metadata?.service;
     case 'host': return log.host || log.metadata?.host;
@@ -35,12 +42,22 @@ function fieldValue(log, field) {
     case 'category': return log.category || log.metadata?.category;
     case 'message': return log.message;
     case 'raw': return log.raw;
-    case 'statusCode': return log.metrics?.statusCode;
-    case 'durationMs': return log.metrics?.durationMs;
-    default:
-      if (log.metadata && log.metadata[field] !== undefined) return log.metadata[field];
-      if (log.ids && log.ids[field] !== undefined) return log.ids[field];
+    case 'statuscode': return log.metrics?.statusCode;
+    case 'durationms': return log.metrics?.durationMs;
+    default: {
+      if (log.metadata && log.metadata[key] !== undefined) return log.metadata[key];
+      if (log.ids && log.ids[key] !== undefined) return log.ids[key];
+      // Case-insensitive fallback so Service: matches a "service" metadata key
+      if (log.metadata) {
+        const mk = Object.keys(log.metadata).find(k => k.toLowerCase() === lower);
+        if (mk !== undefined) return log.metadata[mk];
+      }
+      if (log.ids) {
+        const ik = Object.keys(log.ids).find(k => k.toLowerCase() === lower);
+        if (ik !== undefined) return log.ids[ik];
+      }
       return null;
+    }
   }
 }
 

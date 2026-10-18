@@ -101,3 +101,5 @@ class SourceHttpPoll {
 }
 
 module.exports = SourceHttpPoll;
+// Exported for the SSRF-guard unit tests
+module.exports.isUrlAllowed = isUrlAllowed;

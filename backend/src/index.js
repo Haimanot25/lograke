@@ -148,76 +148,96 @@ app.use((err, req, res, next) => {
 // ── Global error handler (no internal details leaked) ──────────
 app.use(errorHandler);
 
-// Start listener
-const server = app.listen(config.port, () => {
-  logger.info('='.repeat(50));
-  logger.info(`Lograke backend running on http://localhost:${config.port}`);
-  logger.info(`AI (${getActiveProvider()}): ${isEnabled() ? 'ENABLED' : 'DISABLED'}`);
-  logger.info('='.repeat(50));
-
-  // Re-start previously active sources (skip outbound-connect types that may hang on boot)
-  const sources = sourceManager.getAll();
-  for (const source of sources) {
-    if (source.status === 'active' && source.type !== 'sftp' && source.type !== 'http_poll') {
-      sourceManager.start(source.id).catch(err => {
-        logger.warn(`Failed to restart source ${source.name}: ${err.message}`);
-      });
-    }
-  }
-});
-
 // ── Periodic alert evaluator (every 60 seconds) ────────────────
 const store = require('./services/StorageService');
 let lastEval = Date.now();
 let alertEvalRunning = false;
 
-setInterval(async () => {
-  if (alertEvalRunning) return;
-  alertEvalRunning = true;
-  try {
-    const files = store.getMetadataList();
-    for (const file of files) {
-      const record = store.getMetadata(file.id);
-      if (!record) continue;
-      const triggered = evaluateAlerts(record);
-      if (triggered.length > 0) {
-        record.alerts = triggered;
-        for (const alert of triggered) {
-          await dispatchAlert(alert, file.id);
+function startAlertEvaluator() {
+  return setInterval(async () => {
+    if (alertEvalRunning) return;
+    alertEvalRunning = true;
+    try {
+      const files = store.getMetadataList();
+      for (const file of files) {
+        const record = store.getMetadata(file.id);
+        if (!record) continue;
+        const triggered = evaluateAlerts(record);
+        if (triggered.length > 0) {
+          record.alerts = triggered;
+          for (const alert of triggered) {
+            await dispatchAlert(alert, file.id);
+          }
         }
       }
+      lastEval = Date.now();
+    } catch (err) {
+      logger.error('Periodic alert evaluation failed:', err.message);
+    } finally {
+      alertEvalRunning = false;
     }
-    lastEval = Date.now();
-  } catch (err) {
-    logger.error('Periodic alert evaluation failed:', err.message);
-  } finally {
-    alertEvalRunning = false;
-  }
-}, 60000);
-
-// ── Graceful shutdown ──────────────────────────────────────────
-function shutdown(signal) {
-  logger.info(`${signal} received — shutting down gracefully...`);
-  server.close(() => {
-    logger.info('HTTP server closed');
-    sourceManager.stopAll().catch(() => {});
-    logger.info('All sources stopped');
-    process.exit(0);
-  });
-  setTimeout(() => {
-    logger.error('Forced shutdown after timeout');
-    process.exit(1);
-  }, 10000).unref();
+  }, 60000);
 }
 
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+/**
+ * Start the HTTP server + runtime jobs (alert evaluator, source restart,
+ * signal handlers). Only invoked when the process is started directly —
+ * importing this module (e.g. in tests) yields a side-effect-free app.
+ */
+function startServer() {
+  const server = app.listen(config.port, () => {
+    logger.info('='.repeat(50));
+    logger.info(`Lograke backend running on http://localhost:${config.port}`);
+    logger.info(`AI (${getActiveProvider()}): ${isEnabled() ? 'ENABLED' : 'DISABLED'}`);
+    logger.info('='.repeat(50));
 
-// ── Last-resort handlers so a stray rejection/exception is logged, not silent ──
-process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled promise rejection:', reason instanceof Error ? (reason.stack || reason.message) : String(reason));
-});
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught exception — exiting:', err.stack || err.message || err);
-  process.exit(1);
-});
+    // Re-start previously active sources (skip outbound-connect types that may hang on boot)
+    const sources = sourceManager.getAll();
+    for (const source of sources) {
+      if (source.status === 'active' && source.type !== 'sftp' && source.type !== 'http_poll') {
+        sourceManager.start(source.id).catch(err => {
+          logger.warn(`Failed to restart source ${source.name}: ${err.message}`);
+        });
+      }
+    }
+  });
+
+  const alertTimer = startAlertEvaluator();
+  alertTimer.unref();
+
+  // ── Graceful shutdown ──────────────────────────────────────────
+  function shutdown(signal) {
+    logger.info(`${signal} received — shutting down gracefully...`);
+    clearInterval(alertTimer);
+    server.close(() => {
+      logger.info('HTTP server closed');
+      sourceManager.stopAll().catch(() => {});
+      logger.info('All sources stopped');
+      process.exit(0);
+    });
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000).unref();
+  }
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
+  // ── Last-resort handlers so a stray rejection/exception is logged, not silent ──
+  process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled promise rejection:', reason instanceof Error ? (reason.stack || reason.message) : String(reason));
+  });
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught exception — exiting:', err.stack || err.message || err);
+    process.exit(1);
+  });
+
+  return server;
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };
