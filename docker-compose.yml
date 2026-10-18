@@ -9,13 +9,16 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - JWT_SECRET=${JWT_SECRET:-}
+      # REQUIRED: generate one with `openssl rand -hex 32` — the container exits on startup without it
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required. Generate one with: openssl rand -hex 32}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5000}
       - AUTH_ENABLED=true
       - ACTIVE_AI_PROVIDER=${ACTIVE_AI_PROVIDER:-groq}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GROK_API_KEY=${GROK_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - lograke_data:/app/data
     healthcheck:

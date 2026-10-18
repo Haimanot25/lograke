@@ -7,6 +7,13 @@ node_modules
 data
 backend/data
 backend/uploads
+backend/__tests__
+backend/jest.config.js
+backend/jest.setup.js
+**/__tests__
+frontend/src/__tests__
+frontend/coverage
+backend/coverage
 backend/error.log
 backend/combined.log
 backend/.env

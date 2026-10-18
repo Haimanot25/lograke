@@ -1,0 +1,21 @@
+# Normalize line endings: LF in the repository, LF on checkout
+* text=auto eol=lf
+
+# Explicitly binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.db binary
+*.db-wal binary
+*.db-shm binary
+*.zip binary
+*.gz binary
+*.tar binary

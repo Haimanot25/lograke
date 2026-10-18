@@ -2,7 +2,6 @@
   "name": "lograke",
   "version": "1.0.0",
   "description": "Universal Adaptive Log Intelligence Platform",
-  "main": "index.js",
   "scripts": {
     "install:all": "cd backend && npm install && cd ../frontend && npm install",
     "dev": "concurrently \"cd backend && npm start\" \"cd frontend && npm run dev\"",
