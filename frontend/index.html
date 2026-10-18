@@ -9,10 +9,8 @@
     <meta property="og:description" content="Universal adaptive log intelligence platform. Ingest, parse, search, and visualize logs with AI-powered insights." />
     <meta property="og:type" content="website" />
     <title>Lograke</title>
-    <script>
-      var t = localStorage.getItem('lograke-theme');
-      if (t && t !== 'dark') document.documentElement.setAttribute('data-theme', t);
-    </script>
+    <!-- External (not inline) so the CSP can forbid inline scripts -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

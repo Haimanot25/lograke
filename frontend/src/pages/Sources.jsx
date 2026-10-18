@@ -327,10 +327,17 @@ export default function Sources() {
                   <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>API Key</div>
                   <div className="source-webhook-row">
                     <code>{source.config?.apiKey || '—'}</code>
-                    <button className="btn btn-ghost btn-icon" onClick={() => copyToClipboard(source.config?.apiKey || '', `key_${source.id}`)} title="Copy API Key">
-                      {copyFeedback[`key_${source.id}`] ? <Check size={14} /> : <Copy size={14} />}
-                    </button>
+                    {/* The key is revealed only in the creation response — once
+                        masked in the API, there is nothing left to copy */}
+                    {source.config?.apiKey && !source.config.apiKey.includes('•') && (
+                      <button className="btn btn-ghost btn-icon" onClick={() => copyToClipboard(source.config?.apiKey || '', `key_${source.id}`)} title="Copy API Key">
+                        {copyFeedback[`key_${source.id}`] ? <Check size={14} /> : <Copy size={14} />}
+                      </button>
+                    )}
                   </div>
+                  {source.instructions?.apiKeyNote && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{source.instructions.apiKeyNote}</div>
+                  )}
                 </>
               ) : (
                 <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
@@ -416,6 +423,9 @@ export default function Sources() {
                   <button className="btn btn-ghost btn-icon" onClick={() => copyToClipboard(source.instructions.curl, `curl_${source.id}`)}>
                     {copyFeedback[`curl_${source.id}`] ? <Check size={13} /> : <Copy size={13} />} Copy
                   </button>
+                  {source.instructions.apiKeyNote && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{source.instructions.apiKeyNote}</div>
+                  )}
                 </div>
                 <div className="source-setup-block">
                   <div className="source-setup-block-title"><BookOpen size={13} /> rsyslog config (add to /etc/rsyslog.conf)</div>

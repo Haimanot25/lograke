@@ -20,19 +20,25 @@
 
 ### Security
 - Auth enabled by default; the first registered user becomes admin
-- JWT-based authentication with bcrypt password hashing; JWT_SECRET required in production
-- Webhook ingestion authenticated per-source via API key
+- JWT-based authentication with bcrypt password hashing; JWT_SECRET required in production; `/api/health` reports `authInsecure` when running on an ephemeral dev secret
+- Role-based access control: settings writes, parser CRUD/import, and notification settings are admin-only
+- Per-file ownership: uploaded files are scoped to their uploader (non-admins get 403 on others' files); source-ingested and legacy ownerless files remain shared by design
+- Webhook ingestion authenticated per-source via API key — constant-time comparison, revealed exactly once at creation, redacted in all reads, and stripped from request logs
 - Secrets (SFTP passwords, poll bearer tokens) no longer returned by the sources API
-- SSRF guard for HTTP-poll sources; ReDoS protection for user-supplied regex patterns
-- Upload filename sanitization and body-size caps; archive extraction limits
+- SSRF guard for HTTP-poll sources: hostname/IP policy including IPv4-mapped IPv6, DNS pre-resolution of all records, and manual redirect re-validation (max 3 hops); optional `SFTP_ALLOWED_HOSTS` allowlist for SFTP sources
+- ReDoS protection for user-supplied regex patterns, including the `regex:` query DSL (unsafe patterns rejected with 400)
+- Upload filename sanitization and body-size caps; archive extraction capped by decompressed size (`ARCHIVE_MAX_EXTRACTED_MB`) and entry count (`ARCHIVE_MAX_ENTRIES`), with symlink/path-traversal entries dropped
+- CSV export escapes spreadsheet formula injection (leading `=`, `+`, `-`, `@`, tab, CR)
+- Optional age-based storage retention for raw file copies (`STORAGE_MAX_AGE_DAYS`)
+- Syslog listener bind address configurable via `SYSLOG_BIND` (default `0.0.0.0` for docker-compose)
 - Rate limiting on general (100/min), upload (10/min), AI (20/min), and login (20/15min) endpoints
-- Helmet security headers with configurable CSP; CORS origin allowlist support
+- Helmet security headers with strict `script-src 'self'` (no inline/eval scripts; theme bootstrap externalized) and CORS origin allowlist support
 - Generic error messages on internal failures; audit logging for auth events
 - Known limitations documented in SECURITY.md
 
 ### Testing
 - Route-level integration suites for logs, ingestion, webhooks, sources, and API surface
-- Security-control tests (auth, RBAC, SSRF guard, rate limiting, validation)
+- Security-control tests (auth, RBAC, file ownership, SSRF guard incl. DNS/redirects, webhook key hygiene, archive bomb caps, ReDoS rejection, CSV injection escaping, storage retention, rate limiting, validation)
 - Coverage thresholds enforced in CI for backend and frontend
 
 ### Changed

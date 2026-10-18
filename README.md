@@ -99,7 +99,7 @@ npm run start    # Starts backend (serves built frontend)
 ### Testing
 
 ```bash
-# Backend unit tests (11 suites, 142 tests)
+# Backend unit tests (16 suites, 182 tests)
 npm run test:backend
 
 # Frontend unit tests (9 suites, 38 tests)
@@ -137,6 +137,12 @@ npm run test:e2e
 | `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
 | `MAX_JSON_BODY` | Max request body size | `10mb` |
 | `MAX_FILE_SIZE` | Max upload size in bytes | `10485760` (10MB) |
+| `ARCHIVE_MAX_EXTRACTED_MB` | Max decompressed size per archive upload (bomb guard) | `512` |
+| `ARCHIVE_MAX_ENTRIES` | Max files extracted per archive | `5000` |
+| `ALLOW_PRIVATE_URLS` | Allow http-poll sources to target loopback/private URLs (disables the SSRF guard) | `false` |
+| `SYSLOG_BIND` | Syslog listener bind address | `0.0.0.0` |
+| `SFTP_ALLOWED_HOSTS` | Comma-separated SFTP host allowlist (unset = allow all) | unset |
+| `STORAGE_MAX_AGE_DAYS` | Prune raw uploads/ingested copies older than N days (0 = keep forever) | `0` |
 | `LOG_LEVEL` | Logging level | `info` |
 | `VITE_API_BASE` | Frontend API base URL (frontend only) | `/api` (same-origin proxy) |
 
@@ -144,10 +150,12 @@ See `.env.example` (root, fully commented), `backend/.env.example`, and `fronten
 
 ## Security
 
-- **Helmet.js**: HTTP security headers (CSP, HSTS, X-Frame-Options)
+- **Helmet.js**: HTTP security headers (`script-src 'self'` — no inline/eval scripts)
 - **Rate Limiting**: general (100/min), uploads (10/min), AI (20/min), login (20/15min)
 - **JWT Authentication**: Enabled by default (first registered user becomes admin); set `AUTH_ENABLED=false` to disable
-- **Input Validation**: Middleware-based request validation
+- **RBAC + file ownership**: settings/parsers/notifications are admin-only; uploaded files are scoped to their owner
+- **SSRF guards**: HTTP-poll validates hostnames, resolved DNS records, and every redirect hop; SFTP honors an optional host allowlist
+- **Input Validation**: Middleware-based request validation; user regexes guarded by `safe-regex2`
 - **SQL Injection Prevention**: Parameterized queries via better-sqlite3
 - **Error Sanitization**: Internal errors never leak to clients
 - **Configurable CORS**: Restrict origins via `CORS_ORIGIN`

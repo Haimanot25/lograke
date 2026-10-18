@@ -40,7 +40,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      // No 'unsafe-inline'/'unsafe-eval': the theme bootstrap ships as an
+      // external file (public/theme-init.js). style-src keeps
+      // 'unsafe-inline' because React inline style attributes are used
+      // throughout the UI — see SECURITY.md.
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],
@@ -115,6 +119,9 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     aiEnabled: isEnabled(),
     activeAiProvider: getActiveProvider(),
+    // Dev-only condition: running on a generated per-boot JWT secret
+    // (security finding #12) — production refuses to boot without JWT_SECRET
+    authInsecure: config.auth.jwtEphemeral,
     uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
   });

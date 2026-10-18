@@ -8,12 +8,16 @@ if (!process.env._LOGRAKE_DOTENV_LOADED) {
 const isProduction = process.env.NODE_ENV === 'production';
 
 let jwtSecret = process.env.JWT_SECRET;
+// True when running on a generated per-boot secret (dev convenience only) —
+// surfaced via /api/health so operators can detect it (security finding #12)
+let jwtEphemeral = false;
 if (!jwtSecret) {
   if (isProduction) {
     console.error('FATAL: JWT_SECRET environment variable is required in production.');
     process.exit(1);
   }
   jwtSecret = require('crypto').randomBytes(32).toString('hex');
+  jwtEphemeral = true;
   console.warn('WARN: JWT_SECRET not set. Generated ephemeral secret — tokens invalidated on restart.');
 }
 
@@ -28,6 +32,7 @@ const config = {
     // Auth is ON unless explicitly disabled with AUTH_ENABLED=false
     get enabled() { return process.env.AUTH_ENABLED !== 'false'; },
     jwtSecret,
+    jwtEphemeral,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d'
   },
   ai: {

@@ -14,6 +14,10 @@ describe('app basics', () => {
     expect(res.body.status).toBe('healthy');
     expect(typeof res.body.uptime).toBe('number');
     expect(typeof res.body.activeAiProvider).toBe('string');
+    // Security fix #12: reports whether the server runs on an ephemeral JWT
+    // secret (dev convenience; production refuses to boot without one)
+    expect(typeof res.body.authInsecure).toBe('boolean');
+    expect(res.body.authInsecure).toBe(false); // tests pin JWT_SECRET explicitly
   });
 
   it('unknown API routes return a JSON 404', async () => {

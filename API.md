@@ -60,7 +60,7 @@ Rate limit headers (`RateLimit-*`) are included in responses.
 
 | Method | Endpoint   | Auth | Description                              |
 |--------|------------|------|------------------------------------------|
-| GET    | `/health`  | –    | Server health, AI status, uptime         |
+| GET    | `/health`  | –    | Server health, AI status, uptime; `authInsecure: true` flags a running-on-ephemeral-JWT-secret (dev) instance |
 
 ### Auth (`/auth`)
 
@@ -166,30 +166,40 @@ limited to 20 req/min. Log excerpts are sent to the configured provider — see
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET    | `/` | ✔ | Get all settings (API keys are masked) |
-| POST   | `/` | ✔ | Update settings (`active_ai_provider`, `*_api_key`, `ollama_base_url`) |
+| POST   | `/` | **admin** | Update settings (`active_ai_provider`, `*_api_key`, `ollama_base_url`) |
 
 ### Log sources (`/log-sources`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | GET    | `/` | ✔ | List configured sources (with stats and ingest URLs) |
-| POST   | `/` | ✔ | Create a source (`syslog`, `sftp`, `webhook`, `http_poll`) |
-| GET    | `/:id` | ✔ | Get one source |
-| PUT    | `/:id` | ✔ | Update a source configuration |
+| POST   | `/` | ✔ | Create a source (`syslog`, `sftp`, `webhook`, `http_poll`). **Webhook responses include the API key exactly once — store it now; all later reads redact it.** SFTP sources outside `SFTP_ALLOWED_HOSTS` are rejected with 403 |
+| GET    | `/:id` | ✔ | Get one source (secrets are masked) |
+| PUT    | `/:id` | ✔ | Update a source configuration (a masked `••••••` secret echoes back as unchanged; send a new value to rotate) |
 | DELETE | `/:id` | ✔ | Delete a source |
 | POST   | `/:id/start` | ✔ | Start a source |
 | POST   | `/:id/stop` | ✔ | Stop a source |
 | POST   | `/:id/restart` | ✔ | Restart a source |
-| POST   | `/:id/sftp-list` | ✔ | List remote files for an SFTP source |
-| POST   | `/:id/sftp-ingest` | ✔ | Ingest a file from an SFTP source |
+| POST   | `/:id/sftp-list` | ✔ | List remote files for an SFTP source (403 if the host is not in `SFTP_ALLOWED_HOSTS`) |
+| POST   | `/:id/sftp-ingest` | ✔ | Ingest a file from an SFTP source (403 if the host is not in `SFTP_ALLOWED_HOSTS`) |
 
 ### Webhook ingestion
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| POST   | `/logs/ingest/webhook/:sourceId` | `X-API-Key` | Ingest log lines from an external system |
+| POST   | `/logs/ingest/webhook/:sourceId` | `X-API-Key` (or `?apiKey=`) | Ingest log lines from an external system |
 
-Send either one JSON object, an array of entries, or raw text body.
+Send either one JSON object, an array of entries, or raw text body. The
+`X-API-Key` header is preferred; the `?apiKey=` query parameter exists for
+senders that cannot set headers (it is redacted from Lograke's own request
+logs, but may appear in intermediary proxy logs).
+
+### Ownership
+
+File-scoped endpoints (`/logs/:fileId/...`) enforce ownership: non-admin
+users receive `403` for files uploaded by someone else. Files created by
+sources and legacy rows without an owner remain visible to all authenticated
+users (see SECURITY.md "Deployment Considerations").
 
 ## Error handling
 
