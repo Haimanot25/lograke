@@ -190,15 +190,31 @@ describe('logs lifecycle', () => {
     expect(res.status).toBe(404);
   });
 
-  // Characterization: Lograke currently has a single-tenant data model — file
-  // ownership is not enforced per user (documented in SECURITY.md "Deployment
-  // Considerations"). If per-user isolation is implemented, this assertion
-  // should flip to 403 and SECURITY.md should be updated.
-  it('lets any authenticated user read any file (documented single-tenant model)', async () => {
+  // Security fix #2 (per-file authorization): uploads are owned by their
+  // creator (ingest_owner, first-registered admin here) and non-admin users
+  // cannot read other users' files. Ownerless files (source-driven ingestion,
+  // legacy rows) remain shared — see SECURITY.md.
+  it('blocks non-admin users from reading files owned by someone else', async () => {
     const res = await request(app)
       .get(`/api/logs/${fileId}/metadata`)
       .set('Authorization', `Bearer ${otherToken}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('lets the owner read their own file', async () => {
+    const res = await request(app)
+      .get(`/api/logs/${fileId}/metadata`)
+      .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
+  });
+
+  it('hides other users\' files from the file list', async () => {
+    const res = await request(app)
+      .get('/api/logs/files')
+      .set('Authorization', `Bearer ${otherToken}`);
+    expect(res.status).toBe(200);
+    const found = res.body.files.find(f => f.id === fileId);
+    expect(found).toBeUndefined();
   });
 
   it('deletes the file and its analysis', async () => {

@@ -5,10 +5,10 @@ class StorageService {
     const stmtFile = db.prepare(`
       INSERT OR REPLACE INTO files (
         id, name, sourcePath, linesCount, levelCounts, facetCounts, healthScore,
-        detectedFormat, inferredType, inferredFields, multiLineEDR, patterns, anomalies, entities, chronology, timestamp, dedupSummary
+        detectedFormat, inferredType, inferredFields, multiLineEDR, patterns, anomalies, entities, chronology, timestamp, dedupSummary, userId
       ) VALUES (
         @id, @name, @sourcePath, @linesCount, @levelCounts, @facetCounts, @healthScore,
-        @detectedFormat, @inferredType, @inferredFields, @multiLineEDR, @patterns, @anomalies, @entities, @chronology, @timestamp, @dedupSummary
+        @detectedFormat, @inferredType, @inferredFields, @multiLineEDR, @patterns, @anomalies, @entities, @chronology, @timestamp, @dedupSummary, @userId
       )
     `);
 
@@ -48,7 +48,11 @@ class StorageService {
         entities: JSON.stringify(record.entities || {}),
         chronology: JSON.stringify(record.chronology || {}),
         timestamp: record.timestamp,
-        dedupSummary: JSON.stringify(record.dedupSummary || null)
+        dedupSummary: JSON.stringify(record.dedupSummary || null),
+        // Ownership: preserve existing owner on re-ingest unless explicitly provided
+        userId: record.userId !== undefined && record.userId !== null
+          ? record.userId
+          : (db.prepare('SELECT userId FROM files WHERE id = ?').get(record.id)?.userId ?? null)
       });
 
       db.prepare('DELETE FROM logs WHERE fileId = ?').run(record.id);
@@ -136,6 +140,7 @@ class StorageService {
       dedupSummary: (() => {
         try { return JSON.parse(fileRow.dedupSummary || 'null'); } catch { return null; }
       })(),
+      userId: fileRow.userId || null,
       parsedLogs: [],
       alerts: [],
       rules: []
@@ -195,7 +200,8 @@ class StorageService {
       timestamp: fileRow.timestamp,
       dedupSummary: (() => {
         try { return JSON.parse(fileRow.dedupSummary || 'null'); } catch { return null; }
-      })()
+      })(),
+      userId: fileRow.userId || null
     };
   }
 
@@ -252,6 +258,7 @@ class StorageService {
       inferredFields: JSON.parse(fileRow.inferredFields || '[]'),
       multiLineEDR: Boolean(fileRow.multiLineEDR),
       timestamp: fileRow.timestamp,
+      userId: fileRow.userId || null,
       alertCount: fileRow.alertCount
     }));
   }

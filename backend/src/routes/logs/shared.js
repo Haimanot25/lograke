@@ -42,7 +42,7 @@ function authorizeFileAccess(req, res, next) {
   if (!config.auth.enabled) return next();
   const { fileId } = req.params;
   if (!fileId) return next();
-  const record = store.get(fileId);
+  const record = store.getMetadata(fileId);
   if (record && record.userId && record.userId !== req.user?.id && req.user?.role !== 'admin') {
     return res.status(403).json({ error: 'Access denied' });
   }

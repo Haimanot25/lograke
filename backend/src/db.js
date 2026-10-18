@@ -299,6 +299,16 @@ function initDB() {
     db.prepare('INSERT INTO schema_migrations (version) VALUES (10)').run();
   }
 
+  // Migration 11: Add userId column to files (ownership scoping).
+  // NULL = legacy/uploaded-by-source file, shared with all authenticated users.
+  if (!applied.includes(11)) {
+    const fileColumns = db.prepare("PRAGMA table_info('files')").all().map(col => col.name);
+    if (!fileColumns.includes('userId')) {
+      db.exec("ALTER TABLE files ADD COLUMN userId TEXT;");
+    }
+    db.prepare('INSERT INTO schema_migrations (version) VALUES (11)').run();
+  }
+
   // Initialize default active AI provider if not exists
   const activeProvider = db.prepare("SELECT value FROM settings WHERE key = 'active_ai_provider'").get();
   if (!activeProvider) {

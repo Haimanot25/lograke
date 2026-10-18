@@ -1,4 +1,5 @@
 const db = require('../../db');
+const config = require('../../config');
 const { logger } = require('../../middleware/logger');
 const { toEpochMs } = require('../../utils/time');
 const { store, analysisCache } = require('./shared');
@@ -51,8 +52,13 @@ function buildTimeBucketsFromDB(fileId, bucketCount = 24) {
 
 function register(router) {
   // 3. Get list of files
+  // Non-admins see legacy (ownerless) files + files they uploaded; admins see all.
   router.get('/files', (req, res) => {
-    res.json({ files: store.getMetadataList() });
+    let files = store.getMetadataList();
+    if (config.auth.enabled && req.user?.role !== 'admin') {
+      files = files.filter(f => !f.userId || f.userId === req.user?.id);
+    }
+    res.json({ files: files.map(({ userId, ...f }) => f) });
   });
 
   // 3.5 Get file metadata summary without full parsed logs
@@ -98,7 +104,7 @@ function register(router) {
     if (!record) {
       return res.status(404).json({ error: 'File not found' });
     }
-    const { parsedLogs, alerts, rules, ...summary } = record;
+    const { parsedLogs, alerts, rules, userId, ...summary } = record;
     res.json({ success: true, file: summary });
   });
 }

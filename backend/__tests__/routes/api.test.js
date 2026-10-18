@@ -129,12 +129,17 @@ describe('auth flow', () => {
 
 describe('settings endpoint', () => {
   let userToken;
+  let adminToken;
 
   beforeAll(async () => {
-    const res = await request(app)
+    const userRes = await request(app)
       .post('/api/auth/login')
       .send({ username: 'regular_user', password: 'Str0ngPass!' });
-    userToken = res.body.token;
+    userToken = userRes.body.token;
+    const adminRes = await request(app)
+      .post('/api/auth/login')
+      .send({ username: 'root_admin', password: 'Str0ngPass!' });
+    adminToken = adminRes.body.token;
   });
 
   it('requires authentication to read settings', async () => {
@@ -156,14 +161,21 @@ describe('settings endpoint', () => {
     }
   });
 
-  // Characterization: settings currently require only authentication, not the
-  // admin role. This is documented in SECURITY.md "Deployment Considerations" —
-  // if this test starts failing because a role check was added, update this
-  // assertion deliberately and remove the note from SECURITY.md.
-  it('accepts settings updates from any authenticated user', async () => {
+  // Security fix #1 (settings RBAC): settings writes are admin-only.
+  // This replaces the earlier characterization test that pinned the lack of
+  // a role check — see SECURITY.md.
+  it('rejects settings updates from non-admin users', async () => {
     const res = await request(app)
       .post('/api/settings')
       .set('Authorization', `Bearer ${userToken}`)
+      .send({ active_ai_provider: 'groq' });
+    expect(res.status).toBe(403);
+  });
+
+  it('accepts settings updates from an admin', async () => {
+    const res = await request(app)
+      .post('/api/settings')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ active_ai_provider: 'groq' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -172,7 +184,7 @@ describe('settings endpoint', () => {
   it('rejects unknown setting keys', async () => {
     const res = await request(app)
       .post('/api/settings')
-      .set('Authorization', `Bearer ${userToken}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ evil_key: 'nope' });
     expect(res.status).toBe(400);
     expect(res.body.details).toBeDefined();
@@ -181,7 +193,7 @@ describe('settings endpoint', () => {
   it('rejects an invalid AI provider', async () => {
     const res = await request(app)
       .post('/api/settings')
-      .set('Authorization', `Bearer ${userToken}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ active_ai_provider: 'skynet' });
     expect(res.status).toBe(400);
   });

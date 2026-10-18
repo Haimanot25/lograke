@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const config = require('../config');
 
 // CSRF protection: validate Origin/Referer for mutating requests
@@ -65,7 +65,8 @@ router.get('/', requireAuth, (req, res) => {
   }
 });
 
-router.post('/', requireAuth, (req, res) => {
+// Admin-only: settings include provider API keys and global configuration
+router.post('/', requireAuth, requireRole('admin'), (req, res) => {
   const newSettings = req.body;
   if (!newSettings || typeof newSettings !== 'object') {
     return res.status(400).json({ error: 'Invalid settings object' });

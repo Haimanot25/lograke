@@ -183,7 +183,7 @@ router.post('/:id/sftp-ingest', async (req, res) => {
     await new Promise(r => setImmediate(r));
     const logsRouter = require('./logs');
     const sourceName = `sftp_${source.id}_${sanitized}_${new Date().toISOString().slice(0, 10)}`;
-    logsRouter.processLogFile(sourceName, allLines.join('\n'), { source: `sftp:${source.id}`, sourcePath: remoteFull });
+    logsRouter.processLogFile(sourceName, allLines.join('\n'), { source: `sftp:${source.id}`, sourcePath: remoteFull, userId: req.user?.id });
 
     const now = new Date().toISOString();
     const db = require('../db');
