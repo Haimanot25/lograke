@@ -157,29 +157,6 @@ function extractDynamicFields(logInput) {
   return { effectiveLevel, statusCode, actionResult, rawStr };
 }
 
-/**
- * Merges indented stack traces into their parent log entry before parsing
- */
-function preprocessMultilineLogs(rawContent) {
-  if (Array.isArray(rawContent)) return rawContent;
-  if (typeof rawContent !== 'string') return [rawContent];
-
-  const lines = rawContent.split(/\r?\n/);
-  const merged = [];
-
-  for (const line of lines) {
-    if (!line.trim()) continue;
-
-    if (/^\s+at\b|^\s+\.\.\.\s+\d+\s+more|^\s+Caused by:/i.test(line) && merged.length > 0) {
-      merged[merged.length - 1] += '\n' + line;
-    } else {
-      merged.push(line);
-    }
-  }
-
-  return merged;
-}
-
 function canonicalize(logInput, index) {
   if (index === undefined || index === null) index = 0;
   const rawStr = extractRawString(logInput);
@@ -213,7 +190,6 @@ module.exports = {
   canonicalize,
   normalizeTimestamp,
   extractDynamicFields,
-  preprocessMultilineLogs,
   extractRawString,
   resetEpochContext
 };

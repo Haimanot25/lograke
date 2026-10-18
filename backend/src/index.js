@@ -25,11 +25,9 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { logger, requestLogger } = require('./middleware/logger');
 const { optionalAuth } = require('./middleware/auth');
 
-let compression;
-try { compression = require('compression'); } catch (e) { compression = null; }
+const compression = require('compression');
 
 const app = express();
-const serverStartTime = Date.now();
 
 // ── Reverse proxy support (set TRUST_PROXY when behind nginx/etc.) ──
 if (config.trustProxy !== false && config.trustProxy !== undefined) {
@@ -57,7 +55,7 @@ app.use(helmet({
 // ── CORS ───────────────────────────────────────────────────────
 const corsOrigin = config.cors.origin;
 const corsOptions = {
-  origin: corsOrigin === '*' ? '*' : corsOrigin.split(','),
+  origin: corsOrigin === '*' ? '*' : corsOrigin.split(',').map(o => o.trim()).filter(Boolean),
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: config.cors.credentials
@@ -65,7 +63,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // ── Compression ────────────────────────────────────────────────
-if (compression) app.use(compression());
+app.use(compression());
 
 // ── Rate limiting ──────────────────────────────────────────────
 app.use(generalLimiter);

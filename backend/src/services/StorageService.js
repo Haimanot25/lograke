@@ -217,14 +217,6 @@ class StorageService {
     return rows.map(r => ({ value: r.value || 'unknown', count: r.count }));
   }
 
-  /**
-   * Get log count without loading logs.
-   */
-  getLogCount(fileId) {
-    const row = db.prepare('SELECT COUNT(*) as count FROM logs WHERE fileId = ?').get(fileId);
-    return row ? row.count : 0;
-  }
-
   has(fileId) {
     const count = db.prepare('SELECT COUNT(*) as count FROM files WHERE id = ?').get(fileId);
     return count.count > 0;
@@ -234,27 +226,11 @@ class StorageService {
     const deleteTx = db.transaction(() => {
       db.prepare('DELETE FROM alerts WHERE fileId = ?').run(fileId);
       db.prepare('DELETE FROM alert_rules WHERE fileId = ?').run(fileId);
+      db.prepare('DELETE FROM saved_queries WHERE fileId = ?').run(fileId);
       db.prepare('DELETE FROM logs WHERE fileId = ?').run(fileId);
       db.prepare('DELETE FROM files WHERE id = ?').run(fileId);
     });
     deleteTx();
-  }
-
-  forEach(callback) {
-    const fileIds = db.prepare('SELECT id FROM files').all().map(r => r.id);
-    for (const fid of fileIds) {
-      const record = this.get(fid);
-      if (record) callback(record);
-    }
-  }
-
-  clear() {
-    db.exec(`
-      DELETE FROM files;
-      DELETE FROM logs;
-      DELETE FROM alerts;
-      DELETE FROM alert_rules;
-    `);
   }
 
   getMetadataList() {

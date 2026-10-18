@@ -494,7 +494,9 @@ class AdaptiveParser {
         return data;
     }
     autoDetectType(line) {
-        // Skip formats that should never be auto-detected (they use their own dedicated parsers in EnhancedParser)
+        // Skip overly generic formats that must be selected explicitly via a
+        // configured parser — auto-detecting them would misclassify any
+        // pipe/space-delimited line as web, network, db, cdr or security traffic.
         const skipAuto = ['web', 'network', 'db', 'cdr', 'security'];
         for (const [type, regex] of Object.entries(this.specializedParsers)) {
             if (skipAuto.includes(type)) continue;

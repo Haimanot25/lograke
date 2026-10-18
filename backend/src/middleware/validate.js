@@ -1,4 +1,10 @@
-const { validationResult, body, param, query } = require('express-validator');
+/**
+ * Lightweight schema validation middleware — hand-rolled (no express-validator).
+ *
+ * Schema shape per field: { required?, type?: 'string'|'number'|'boolean',
+ * minLength?, maxLength?, min?, max?, enum?: string[], pattern?: RegExp }
+ * Query params declared as 'number' are coerced from string to number in place.
+ */
 
 function validateSchema(schema, source) {
   return (req, res, next) => {
@@ -71,15 +77,4 @@ function validateQuery(schema) {
   return validateSchema(schema, 'query');
 }
 
-function validate(req, res, next) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: errors.array().map(e => `${e.path}: ${e.msg}`),
-    });
-  }
-  next();
-}
-
-module.exports = { validate, validateBody, validateQuery, body, param, query };
+module.exports = { validateBody, validateQuery };

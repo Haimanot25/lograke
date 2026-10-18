@@ -1,3 +1,10 @@
+/**
+ * SourceSftp — lifecycle placeholder for SFTP sources.
+ *
+ * start()/stop() only track status; this class does NOT poll remote servers.
+ * SFTP ingestion is on-demand via the /sftp-list and /sftp-ingest endpoints
+ * in routes/logSources.js (surfaced as the SFTP browser in the Sources page).
+ */
 class SourceSftp {
   constructor(sourceConfig, ingestCallback) {
     this.id = sourceConfig.id;

@@ -80,14 +80,14 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE /api/log-sources/:id — delete source
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const source = sourceManager.getById(req.params.id);
     if (!source) return res.status(404).json({ error: 'Source not found' });
-    sourceManager.delete(req.params.id);
+    await sourceManager.delete(req.params.id);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete source' });
+    sendRouteError(res, err, 'logSources/delete');
   }
 });
 
@@ -216,7 +216,7 @@ function enrichSource(source, baseUrl) {
       ...source,
       config: redactConfig(source.config),
       instructions: {
-        manual: `SFTP source configured to pull from:\n  ${source.config?.username}@${source.config?.host}:${source.config?.port || 22}\n  Path: ${source.config?.remotePath || '/'}\n  Pattern: ${source.config?.filePattern || '*.log'}\n\nPlace log files in the monitored directory. They will be automatically pulled and ingested.`
+        manual: `SFTP source configured for:\n  ${source.config?.username}@${source.config?.host}:${source.config?.port || 22}\n  Path: ${source.config?.remotePath || '/'}\n  Pattern: ${source.config?.filePattern || '*.log'}\n\nIngestion is on-demand: use the SFTP browser in the Sources page to list remote files (POST /api/log-sources/${source.id}/sftp-list) and ingest the ones you choose (POST /api/log-sources/${source.id}/sftp-ingest). Scheduled automatic polling is not implemented yet.`
       }
     };
   }

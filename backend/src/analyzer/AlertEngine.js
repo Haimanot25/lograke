@@ -7,11 +7,11 @@ const db = require('../db');
 const alertRules = new Map();
 
 function loadRulesFromFile(fileId) {
+  // alert_rules columns: id, fileId, name, type, threshold, severity, description, active
   const rows = db.prepare('SELECT * FROM alert_rules WHERE fileId = ?').all(fileId);
   const rules = rows.map(r => ({
     ...r,
-    active: r.active === 1,
-    params: r.params ? JSON.parse(r.params) : {}
+    active: r.active === 1
   }));
   alertRules.set(fileId, rules);
   return rules;
@@ -23,6 +23,7 @@ function createRule(fileId, rule) {
   }
 
   const id = `alert_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  // Persisted columns only — see the alert_rules schema in db.js
   const normalized = {
     id,
     fileId,
@@ -30,11 +31,8 @@ function createRule(fileId, rule) {
     type: rule.type,
     severity: rule.severity || 'medium',
     threshold: rule.threshold || 0,
-    field: rule.field || 'errorCount',
     description: rule.description || `Auto alert rule ${rule.name}`,
-    active: rule.active !== false,
-    createdAt: new Date().toISOString(),
-    params: rule.params || {}
+    active: rule.active !== false
   };
 
   db.prepare(`
@@ -63,7 +61,9 @@ function getRules(fileId) {
 }
 
 function evaluateRule(rule, record) {
-  if (!rule.active) return { rule, triggered: false, message: 'Rule inactive' };
+  if (!rule.active) {
+    return { ruleId: rule.id, triggered: false, severity: rule.severity, type: rule.type, message: 'Rule inactive' };
+  }
   const totalLogs = record.linesCount || (record.parsedLogs || []).length;
   const errorCount = record.levelCounts?.error || 0;
   const warnCount = record.levelCounts?.warn || 0;

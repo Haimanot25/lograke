@@ -71,6 +71,10 @@ the following when exposing it more widely:
   users).
 - **Ingestion surfaces**: syslog (UDP/TCP), webhook, and HTTP-poll sources accept
   logs from the network. Bind them to trusted interfaces only and use firewall rules.
+- **SFTP sources**: any authenticated user can configure a source pointing at an
+  arbitrary host/port (the server will connect outbound on their behalf — an
+  SSRF-class capability). Ingestion is on-demand only (browse + pull individual
+  files via the Sources page); scheduled automatic polling is not implemented.
 - **Archive uploads**: upload size limits apply to archives, not to their
   decompressed contents. Prefer ingesting plain text/log files from sources you
   control.

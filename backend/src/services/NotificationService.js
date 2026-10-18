@@ -61,7 +61,7 @@ function logNotification(alertId, channel, status, response) {
   try {
     db.prepare('INSERT INTO notification_log (alertId, channel, status, response) VALUES (?, ?, ?, ?)')
       .run(alertId || null, channel, status, response || null);
-  } catch (err) { console.warn('HTTP notification send failed:', err.message); }
+  } catch (err) { logger.warn('HTTP notification send failed:', err.message); }
 }
 
 async function sendWebhook(url, payload, headers = {}) {

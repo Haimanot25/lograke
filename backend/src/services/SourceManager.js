@@ -79,8 +79,10 @@ class SourceManager {
     return this.getById(id);
   }
 
-  delete(id) {
-    this.stop(id);
+  async delete(id) {
+    // Stopping is best-effort — the row is removed even if a source's
+    // transport fails to close cleanly.
+    await this.stop(id).catch(() => {});
     db.prepare('DELETE FROM log_sources WHERE id = ?').run(id);
   }
 
@@ -140,16 +142,6 @@ class SourceManager {
     for (const [id] of this.instances) {
       await this.stop(id);
     }
-  }
-
-  getWebhookSources() {
-    const sources = [];
-    for (const [id, instance] of this.instances) {
-      if (instance instanceof SourceWebhook) {
-        sources.push(instance.toJSON(this.baseUrl));
-      }
-    }
-    return sources;
   }
 
   validateWebhookKey(sourceId, apiKey) {

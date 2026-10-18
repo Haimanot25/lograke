@@ -1,3 +1,5 @@
+const { logger } = require('./logger');
+
 // AppError class — keep for operational error handling
 class AppError extends Error {
   constructor(message, statusCode = 500) {
@@ -21,7 +23,7 @@ function errorHandler(err, req, res, next) {
     return res.status(status).json({ error: message });
   }
 
-  console.error('Unhandled error:', err);
+  logger.error('Unhandled error:', err.stack || err.message || err);
   return res.status(500).json({
     error: 'Internal server error'
   });

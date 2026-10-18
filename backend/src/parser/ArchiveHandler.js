@@ -3,6 +3,7 @@ const path = require('path');
 const zlib = require('zlib');
 const AdmZip = require('adm-zip');
 const tar = require('tar');
+const { logger } = require('../middleware/logger');
 
 /**
  * Extracts raw log contents from an archive buffer.
@@ -98,7 +99,7 @@ function extractLogFiles(fileBuffer, originalName, uploadsDir) {
         fs.unlinkSync(tempArchivePath);
         fs.rmSync(extractDirPath, { recursive: true, force: true });
       } catch (cleanupErr) {
-        console.warn('Failed to clean up temp extraction directories:', cleanupErr.message);
+        logger.warn('Failed to clean up temp extraction directories:', cleanupErr.message);
       }
 
       return files;
