@@ -67,7 +67,10 @@ class SourceManager {
     let config = existing.config || {};
     if (data.config) {
       config = { ...config, ...data.config };
-      for (const key of ['password', 'authValue']) {
+      // Never let a masked value (as returned by GET) clobber the stored
+      // secret; a genuinely new value is stored as-is (that is the only way
+      // to rotate a webhook key now that it is revealed once at creation)
+      for (const key of ['password', 'authValue', 'apiKey']) {
         if (config[key] === REDACTED) config[key] = (existing.config || {})[key];
         if (config[key] === undefined) delete config[key];
       }

@@ -18,7 +18,13 @@ class SourceWebhook {
   }
 
   validateApiKey(key) {
-    return key === this.apiKey;
+    // Constant-time comparison — the webhook key must not leak via timing
+    // (security finding #4)
+    if (typeof key !== 'string' || !key || typeof this.apiKey !== 'string' || !this.apiKey) return false;
+    const a = Buffer.from(key, 'utf8');
+    const b = Buffer.from(this.apiKey, 'utf8');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   async handlePayload(body, ip) {
@@ -48,7 +54,9 @@ class SourceWebhook {
       id: this.id,
       type: 'webhook',
       webhookUrl: this.getWebhookUrl(baseUrl),
-      apiKey: this.apiKey,
+      // Serialized output never carries the raw key — it is revealed only in
+      // the POST /api/log-sources creation response
+      apiKey: '••••••',
       stats: this.getStats()
     };
   }

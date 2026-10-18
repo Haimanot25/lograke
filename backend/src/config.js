@@ -44,6 +44,11 @@ const config = {
   log: {
     level: process.env.LOG_LEVEL || 'info'
   },
+  // Syslog listener bind address: default all interfaces (docker-compose peers
+  // need it); set to 127.0.0.1 or a LAN IP to restrict exposure (finding #9)
+  syslog: {
+    bind: process.env.SYSLOG_BIND || '0.0.0.0'
+  },
   // Behind a reverse proxy: TRUST_PROXY=1 (hop count), 'true', or an IP/CIDR list
   trustProxy: process.env.TRUST_PROXY
     ? (/^\d+$/.test(process.env.TRUST_PROXY) ? parseInt(process.env.TRUST_PROXY, 10)

@@ -1,9 +1,9 @@
 /**
- * Unit tests for the HTTP-poll SSRF guard (isUrlAllowed).
+ * Unit tests for the HTTP-poll SSRF guard (isUrlAllowed / isIpAllowed).
  *
- * These pin the CURRENT behavior of the guard. Known limitations (DNS
- * resolution not validated, redirects followed, IPv4-mapped IPv6) are tracked
- * in SECURITY.md — tighten here together with the guard itself.
+ * Finding #5 hardening: IPv4-mapped IPv6 (::ffff:) now falls under the IPv4
+ * rules, DNS results are pre-validated, and redirects are re-checked per hop
+ * (DNS/redirect behavior is covered in SourceHttpPoll.ssrf.test.js).
  */
 const SourceHttpPoll = require('../../src/sources/SourceHttpPoll');
 const { isUrlAllowed } = SourceHttpPoll;
@@ -49,6 +49,30 @@ describe('isUrlAllowed', () => {
   it('rejects IPv6 loopback', () => {
     expect(isUrlAllowed('http://[::1]:8080')).toBe(false);
     expect(isUrlAllowed('http://[::]/')).toBe(false);
+  });
+
+  // Finding #5: IPv4-mapped IPv6 must obey the IPv4 policy — this was the
+  // documented bypass that let 127.0.0.1 back in as ::ffff:127.0.0.1.
+  it('rejects IPv4-mapped IPv6 loopback and metadata addresses', () => {
+    expect(isUrlAllowed('http://[::ffff:127.0.0.1]/')).toBe(false);
+    expect(isUrlAllowed('http://[::ffff:169.254.169.254]/latest/meta-data/')).toBe(false);
+    expect(isUrlAllowed('http://[::ffff:0.0.0.0]/')).toBe(false);
+    // hex-encoded embedded form: 127.0.0.1 = 7f00:1
+    expect(isUrlAllowed('http://[::ffff:7f00:1]/')).toBe(false);
+  });
+
+  it('applies IPv4 policy to IPv4-compatible IPv6 too', () => {
+    expect(isUrlAllowed('http://[::127.0.0.1]/')).toBe(false);
+    // ::ffff:10.1.2.3 → mapped private, same policy as 10.1.2.3 (allowed)
+    expect(isUrlAllowed('http://[::ffff:10.1.2.3]/')).toBe(true);
+  });
+
+  it('keeps blocking unique-local and link-local IPv6 ranges', () => {
+    expect(isUrlAllowed('http://[fd00::1]/')).toBe(false);
+    expect(isUrlAllowed('http://[fc00::1]/')).toBe(false);
+    expect(isUrlAllowed('http://[fe80::1]/')).toBe(false);
+    // public v6 stays reachable
+    expect(isUrlAllowed('http://[2606:4700:4700::1111]/')).toBe(true);
   });
 
   // Current design: RFC1918 private ranges are reachable so self-hosted

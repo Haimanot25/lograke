@@ -3,6 +3,7 @@ const sourceManager = require('../services/SourceManager');
 const crypto = require('crypto');
 const { requireAuth } = require('../middleware/auth');
 const { logger } = require('../middleware/logger');
+const { isSftpHostAllowed } = require('../utils/hostGuard');
 
 const REDACTED = '••••••';
 
@@ -47,8 +48,13 @@ router.post('/', (req, res) => {
     if (!['webhook', 'syslog', 'http_poll', 'sftp'].includes(type)) {
       return res.status(400).json({ error: 'type must be webhook, syslog, http_poll, or sftp' });
     }
+    if (type === 'sftp' && !isSftpHostAllowed(config?.host)) {
+      return res.status(403).json({ error: `SFTP host "${config?.host || ''}" is not allowed (SFTP_ALLOWED_HOSTS)` });
+    }
     const source = sourceManager.create({ name, type, config });
-    res.json({ success: true, source: { ...source, config: redactConfig(source.config) } });
+    // The webhook API key is revealed exactly once — in this creation response
+    const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+    res.json({ success: true, source: enrichSource(source, baseUrl, { revealApiKey: true }) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create source' });
   }
@@ -71,9 +77,17 @@ router.get('/:id', (req, res) => {
 // PUT /api/log-sources/:id — update source
 router.put('/:id', (req, res) => {
   try {
+    const existing = sourceManager.getById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Source not found' });
+    const nextType = req.body?.type || existing.type;
+    const nextHost = req.body?.config?.host;
+    if (nextType === 'sftp' && nextHost !== undefined && !isSftpHostAllowed(nextHost)) {
+      return res.status(403).json({ error: `SFTP host "${nextHost || ''}" is not allowed (SFTP_ALLOWED_HOSTS)` });
+    }
     const updated = sourceManager.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Source not found' });
-    res.json({ success: true, source: { ...updated, config: redactConfig(updated.config) } });
+    const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+    res.json({ success: true, source: enrichSource(updated, baseUrl) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update source' });
   }
@@ -128,6 +142,9 @@ router.post('/:id/sftp-list', async (req, res) => {
     if (!source) return res.status(404).json({ error: 'Source not found' });
     if (source.type !== 'sftp') return res.status(400).json({ error: 'Not an SFTP source' });
     const config = source.config || {};
+    if (!isSftpHostAllowed(config.host)) {
+      return res.status(403).json({ error: `SFTP host "${config.host || ''}" is not allowed (SFTP_ALLOWED_HOSTS)` });
+    }
     const Client = require('ssh2-sftp-client');
     const client = new Client();
     await client.connect({
@@ -162,6 +179,9 @@ router.post('/:id/sftp-ingest', async (req, res) => {
     if (!source) return res.status(404).json({ error: 'Source not found' });
     if (source.type !== 'sftp') return res.status(400).json({ error: 'Not an SFTP source' });
     const config = source.config || {};
+    if (!isSftpHostAllowed(config.host)) {
+      return res.status(403).json({ error: `SFTP host "${config.host || ''}" is not allowed (SFTP_ALLOWED_HOSTS)` });
+    }
     const remotePath = config.remotePath || '/';
     const remoteFull = `${remotePath.replace(/\/$/, '')}/${sanitized}`;
 
@@ -197,15 +217,21 @@ router.post('/:id/sftp-ingest', async (req, res) => {
   }
 });
 
-function enrichSource(source, baseUrl) {
+function enrichSource(source, baseUrl, options = {}) {
+  const { revealApiKey = false } = options;
   if (source.type === 'webhook') {
     const apiKey = source.config?.apiKey || '';
+    const curlKey = revealApiKey ? apiKey : '<API_KEY>';
     const webhookUrl = `${baseUrl.replace(/\/+$/, '')}/api/logs/ingest/webhook/${source.id}`;
     return {
       ...source,
-      config: { ...redactConfig(source.config), webhookUrl, apiKey },
+      config: { ...redactConfig(source.config), webhookUrl, apiKey: revealApiKey ? apiKey : (apiKey ? REDACTED : '') },
       instructions: {
-        curl: `curl -X POST "${webhookUrl}" \\\n  -H "X-API-Key: ${apiKey}" \\\n  -H "Content-Type: text/plain" \\\n  -d "$(tail -100 /var/log/syslog)"`,
+        curl: `curl -X POST "${webhookUrl}" \\\n  -H "X-API-Key: ${curlKey}" \\\n  -H "Content-Type: text/plain" \\\n  -d "$(tail -100 /var/log/syslog)"`,
+        // The key is shown once, in the POST /api/log-sources response
+        apiKeyNote: revealApiKey
+          ? undefined
+          : 'API key is revealed only when the source is created — store it now or rotate the source to get a new one.',
         filebeat: `output.logstash:\n  hosts: ["${baseUrl.replace(/^https?:\/\//, '')}"]`,
         rsyslog: `action(type="omfwd" target="${new URL(baseUrl).hostname}" port="5000" protocol="tcp")`
       }

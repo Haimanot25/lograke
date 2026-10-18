@@ -1,5 +1,6 @@
 const dgram = require('dgram');
 const { createServer } = require('net');
+const config = require('../config');
 
 const RFC3164_RE = /^<(\d+)>?([A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2})\s+(\S+)\s+(\S+)\s*(.*)$/;
 const RFC5424_RE = /^<(\d+)>?\d+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*(.*)$/;
@@ -97,7 +98,7 @@ class SourceSyslog {
         this.stats.errors++;
       });
       await new Promise((resolve, reject) => {
-        this.udpServer.bind(this.port, '0.0.0.0', () => resolve());
+        this.udpServer.bind(this.port, config.syslog.bind, () => resolve());
         this.udpServer.on('error', reject);
       });
     }
@@ -115,7 +116,7 @@ class SourceSyslog {
         socket.on('error', () => { this.stats.errors++; });
       });
       await new Promise((resolve, reject) => {
-        this.tcpServer.listen(this.port, '0.0.0.0', () => resolve());
+        this.tcpServer.listen(this.port, config.syslog.bind, () => resolve());
         this.tcpServer.on('error', reject);
       });
     }

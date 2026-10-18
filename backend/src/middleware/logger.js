@@ -27,7 +27,10 @@ function requestLogger(req, res, next) {
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
-    logger.info(`${req.method} ${req.originalUrl}`, {
+    // Never write credentials that arrived via query strings into logs
+    // (webhook sources accept ?apiKey= for clients that cannot set headers)
+    const safeUrl = String(req.originalUrl).replace(/([?&](?:apiKey|token|key)=)[^&]*/gi, '$1***');
+    logger.info(`${req.method} ${safeUrl}`, {
       status: res.statusCode,
       duration: `${duration}ms`,
       ip: req.ip
