@@ -11,7 +11,7 @@ test('health endpoint returns 200', async ({ request }) => {
 test('frontend serves index.html', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#root')).toBeAttached();
-  await expect(page.locator('title')).toContainText('Lograke');
+  await expect(page).toHaveTitle('Lograke');
 });
 
 test('CORS headers are set', async ({ request }) => {

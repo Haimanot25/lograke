@@ -99,10 +99,10 @@ npm run start    # Starts backend (serves built frontend)
 ### Testing
 
 ```bash
-# Backend unit tests (6 suites)
+# Backend unit tests (11 suites, 142 tests)
 npm run test:backend
 
-# Frontend unit tests (6 suites)
+# Frontend unit tests (9 suites, 38 tests)
 npm run test:frontend
 
 # All unit tests

@@ -19,6 +19,7 @@ export function extractGroupPattern(regexStr, groupName) {
   let depth = 0;
   let end = idx + 3 + escaped.length + 1;
   for (let i = end; i < regexStr.length; i++) {
+    if (regexStr[i] === '\\') { i++; continue; } // skip escaped chars, e.g. \(
     if (regexStr[i] === '(') depth++;
     else if (regexStr[i] === ')') {
       if (depth === 0) { end = i; break; }
