@@ -43,8 +43,8 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ username, password }),
         credentials: 'include'
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((Array.isArray(data.details) ? data.details.join(' ') : null) || data.error || 'Login failed');
       setUser(data.user);
       return { success: true };
     } catch (err) {
@@ -63,8 +63,8 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ username, password }),
         credentials: 'include'
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((Array.isArray(data.details) ? data.details.join(' ') : null) || data.error || 'Registration failed');
       setUser(data.user);
       return { success: true };
     } catch (err) {

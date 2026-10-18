@@ -4,10 +4,10 @@ import { useModal } from '../context/ModalContext';
 import { Webhook, Radio, Globe, Plus, Play, Square, Trash2, Copy, Check, Loader2, Server, Terminal, BookOpen, FolderOpen, Download } from 'lucide-react';
 
 const SOURCE_TYPES = {
-  webhook: { icon: Webhook, label: 'Webhook', color: 'var(--color-info)' },
-  syslog: { icon: Radio, label: 'Syslog Listener', color: 'var(--color-warning)' },
-  http_poll: { icon: Globe, label: 'HTTP Poll', color: 'var(--color-accent)' },
-  sftp: { icon: Server, label: 'SFTP Pull', color: 'var(--color-success)' }
+  webhook: { icon: Webhook, label: 'Webhook', color: 'var(--color-info)', desc: 'Push events from apps & CI systems via HTTP' },
+  syslog: { icon: Radio, label: 'Syslog Listener', color: 'var(--color-warning)', desc: 'Receive syslog from servers & network devices' },
+  http_poll: { icon: Globe, label: 'HTTP Poll', color: 'var(--color-accent)', desc: 'Pull logs from a remote URL on a schedule' },
+  sftp: { icon: Server, label: 'SFTP Pull', color: 'var(--color-success)', desc: 'Fetch log files over SFTP periodically' }
 };
 
 export default function Sources() {
@@ -591,23 +591,40 @@ export default function Sources() {
 
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="dialog-panel" style={{ maxWidth: 560, width: '95%' }} onClick={e => e.stopPropagation()}>
-            <h3>Add Log Source</h3>
+          <div className="dialog-panel" style={{ maxWidth: 620, width: '95%' }} onClick={e => e.stopPropagation()}>
+            <div className="src-modal-head">
+              <div className="src-modal-icon"><Webhook size={20} /></div>
+              <div>
+                <h3 className="src-modal-title">Add Log Source</h3>
+                <p className="src-modal-sub">Choose how logs will reach LogRake, then configure the connection.</p>
+              </div>
+            </div>
+
+            <div className="src-type-grid" role="radiogroup" aria-label="Source type">
+              {Object.entries(SOURCE_TYPES).map(([type, meta]) => {
+                const TypeIcon = meta.icon;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    role="radio"
+                    aria-checked={formData.type === type}
+                    className={`src-type-card${formData.type === type ? ' selected' : ''}`}
+                    onClick={() => setFormData(f => ({ ...f, type, config: {} }))}
+                  >
+                    <span className="src-type-icon" style={{ color: meta.color }}><TypeIcon size={18} /></span>
+                    <span className="src-type-label">{meta.label}</span>
+                    <span className="src-type-desc">{meta.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="form-row">
               <label>Source Name</label>
               <input type="text" className="input-text" placeholder="e.g. Production Web Servers"
                 value={formData.name}
                 onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
-            </div>
-            <div className="form-row">
-              <label>Source Type</label>
-              <select className="input-select" value={formData.type}
-                onChange={e => setFormData(f => ({ ...f, type: e.target.value, config: {} }))}>
-                <option value="webhook">Webhook (External Tools Push)</option>
-                <option value="syslog">Syslog Listener</option>
-                <option value="http_poll">HTTP Poll (Pull)</option>
-                <option value="sftp">SFTP Pull</option>
-              </select>
             </div>
             {getConfigForm()}
             <div className="form-actions">

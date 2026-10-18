@@ -1,6 +1,7 @@
 import {
   Upload,
   LayoutDashboard,
+  Webhook,
   Radio,
   Search,
   Globe,
@@ -35,6 +36,7 @@ import {
 export const NavIcons = {
   upload: Upload,
   dashboard: LayoutDashboard,
+  sources: Webhook,
   livetail: Radio,
   explorer: Search,
   observability: Globe,
@@ -71,4 +73,4 @@ export const MiscIcons = {
   palette: Palette,
 };
 
-export { Upload, LayoutDashboard, Radio, Search, Globe, Puzzle, BarChart3, GitCompare, FileText, Settings, AlertTriangle, Network, Heart, Inbox, Download, FileJson, FileSpreadsheet, FileDown, Info, Clock, ChevronDown, ChevronRight, Loader2, Pause, Play, CheckCircle2, XCircle, AlertCircle, Sun, Moon, Palette };
+export { Upload, LayoutDashboard, Webhook, Radio, Search, Globe, Puzzle, BarChart3, GitCompare, FileText, Settings, AlertTriangle, Network, Heart, Inbox, Download, FileJson, FileSpreadsheet, FileDown, Info, Clock, ChevronDown, ChevronRight, Loader2, Pause, Play, CheckCircle2, XCircle, AlertCircle, Sun, Moon, Palette };

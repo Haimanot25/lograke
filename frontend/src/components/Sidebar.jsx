@@ -14,7 +14,7 @@ const navGroups = [
     id: 'main', label: 'Main',
     items: (files) => [
       { tab: 'upload', icon: NavIcons.upload, label: 'Upload', desc: 'Ingest log files' },
-      { tab: 'sources', icon: NavIcons.livetail, label: 'Connections', desc: 'External sources' },
+      { tab: 'sources', icon: NavIcons.sources, label: 'Connections', desc: 'External sources' },
       ...(files.length > 0 ? [
         { tab: 'dashboard', icon: NavIcons.dashboard, label: 'Dashboard', desc: 'Key metrics overview' },
         { tab: 'livetail', icon: NavIcons.livetail, label: 'Live Tail', desc: 'Streaming log feed' },
@@ -142,16 +142,11 @@ function Sidebar() {
       {/* Brand */}
       <div className="sb-brand">
         <div className="sb-brand-logo">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="7" fill="url(#sb-logo)" />
-            <path d="M8 10h12M8 14h9M8 18h6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
-            <defs>
-              <linearGradient id="sb-logo" x1="0" y1="0" x2="28" y2="28">
-                <stop offset="0%" stopColor="#6366f1" />
-                <stop offset="100%" stopColor="#a855f7" />
-              </linearGradient>
-            </defs>
-          </svg>
+          <img
+            src={theme === 'white' ? '/logowithouttext-forleftside.png' : '/logowhitewithouttext-forblackbg.png'}
+            alt="LogRake"
+            style={{ height: theme === 'white' ? 38 : 26, width: 'auto', display: 'block' }}
+          />
         </div>
         {!sidebarCollapsed && (
           <div className="sb-brand-text">
